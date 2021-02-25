@@ -8,7 +8,7 @@ The reference does not resolve the second reference because it avoids recursion.
 
 ## usage
 
-swagger-to-md src-file [dist-file]
+swagger-to-md src-file [dist-file]  
 
-swagger-to-md openapi.yaml README.md
-swagger-to-md openapi.json > README.md
+swagger-to-md openapi.yaml README.md  
+swagger-to-md openapi.json > README.md  
