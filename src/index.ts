@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { promises as fs } from "fs";
 import YAML from "yaml";
 import { OpenAPIV3 } from "openapi-types";
@@ -201,7 +202,9 @@ const outputObject = (
           apiDocument,
           key,
           value,
-          undefined,
+          Array.isArray(apiObject.required)
+            ? apiObject.required?.includes(key)
+            : apiObject.required,
           setRef,
           nowLevel + 1
         );

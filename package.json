@@ -1,11 +1,12 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "bin": {
     "openapi-to-md": "dist/index.js"
   },
   "scripts": {
+    "test": "ts-node dist/index.js test/test.yaml test/readme.md",
     "build": "tsc -b",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src"
@@ -27,13 +28,19 @@
     "swagger2openapi": "*",
     "yaml": "*"
   },
-  "description": "## description",
+  "description": "Convert OpenAPI format to Markdown",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SoraKumo001/openapi-to-md.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "openapi",
+    "swagger",
+    "yaml",
+    "json",
+    "markdown"
+  ],
+  "author": "SoraKumo",
   "bugs": {
     "url": "https://github.com/SoraKumo001/openapi-to-md/issues"
   },
