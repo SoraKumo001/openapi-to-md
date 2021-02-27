@@ -1,12 +1,12 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "main": "dist/index.js",
   "bin": {
     "openapi-to-md": "dist/index.js"
   },
   "scripts": {
-    "test": "ts-node dist/index.js test/test.yaml test/readme.md",
+    "test": "ts-node src/index.ts test/test.yaml test/readme.md",
     "build": "tsc -b",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src"

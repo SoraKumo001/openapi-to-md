@@ -98,7 +98,12 @@ const outputReferenceTable = (apiDocument: ApiDocument) => {
 
   return output + "\n";
 };
-
+const getRefName = (refObjecgt: unknown | OpenAPIV3.ReferenceObject) => {
+  if (typeof refObjecgt === "object" && refObjecgt && "$ref" in refObjecgt) {
+    return (refObjecgt as OpenAPIV3.ReferenceObject)["$ref"];
+  }
+  return undefined;
+};
 const getApiObject: {
   <T = unknown | OpenAPIV3.ReferenceObject>(
     apiDocument: ApiDocument,
@@ -114,7 +119,8 @@ const getApiObject: {
   object: OpenAPIV3.ReferenceObject | unknown,
   refs?: Set<string>
 ) => {
-  if (typeof object === "object" && object && "$ref" in object) {
+  const refName = getRefName(object);
+  if (refName) {
     const ref = (object as OpenAPIV3.ReferenceObject)["$ref"];
     if (refs) {
       if (refs.has(ref)) {
@@ -154,6 +160,7 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
   } else {
     output += "```ts\n";
     if ("in" in apiObject) {
+      output += outputRefComment(schemas, 0);
       output += outputObject(
         apiDocument,
         apiObject.name,
@@ -164,6 +171,8 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
       );
     } else {
       if (apiObject.type === "object") {
+        output += outputRefComment(schemas, 0);
+        output += outputComment(apiObject, 0);
         output += outputObject(apiDocument, undefined, apiObject);
       } else if (apiObject.type === "array") {
         output += outputObject(apiDocument, undefined, apiObject);
@@ -173,7 +182,24 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
   }
   return output;
 };
-const SP = (size: number) => "".padEnd(size);
+const SP = (size: number) => "".padEnd(size * 2);
+const outputRefComment = (
+  apiObject: OpenAPIV3.ReferenceObject | unknown,
+  level: number
+) => {
+  const refName = getRefName(apiObject);
+  return refName ? SP(level) + `// ${refName}\n` : "";
+};
+const outputComment = (
+  apiObject: OpenAPIV3.NonArraySchemaObject,
+  level: number
+) => {
+  return apiObject.description
+    ? apiObject.description
+        .split("\n")
+        .reduce((a, b) => a + SP(level) + `// ${b}\n`, "")
+    : "";
+};
 const outputObject = (
   apiDocument: ApiDocument,
   name: string | undefined,
@@ -193,9 +219,11 @@ const outputObject = (
 
   let output = "";
   if ("$ref" in apiObject) {
-    output += SP(nowLevel * 2) + `${name}:${apiObject["$ref"]}\n`;
+    output += SP(nowLevel) + `${name}:${apiObject["$ref"]}\n`;
   } else if (apiObject.type === "object") {
-    output += name ? SP(nowLevel * 2) + `${name}: {\n` : "{\n";
+    output += outputRefComment(schemas, nowLevel);
+    output += outputComment(apiObject, nowLevel);
+    output += name ? SP(nowLevel) + `${name}: {\n` : "{\n";
     apiObject.properties &&
       Object.entries(apiObject.properties).forEach(([key, value]) => {
         output += outputObject(
@@ -209,7 +237,7 @@ const outputObject = (
           nowLevel + 1
         );
       });
-    output += SP(nowLevel * 2) + "}\n";
+    output += SP(nowLevel) + "}\n";
   } else if (apiObject.type === "array") {
     output +=
       outputObject(
@@ -221,13 +249,15 @@ const outputObject = (
         nowLevel
       ).trimEnd() + "[]\n";
   } else {
+    output += outputRefComment(schemas, nowLevel);
+    output += outputComment(apiObject, nowLevel);
     const type: string[] = Array.isArray(apiObject.type)
       ? apiObject.type
       : apiObject.type
       ? [apiObject.type]
       : [];
     output +=
-      SP(nowLevel * 2) +
+      SP(nowLevel) +
       `${name}${required === true ? "" : "?"}: ${type.reduce(
         (a, b, index) => a + (index ? " | " : "") + b,
         ""
