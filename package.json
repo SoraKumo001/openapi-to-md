@@ -1,6 +1,6 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "dist/index.js",
   "bin": {
     "openapi-to-md": "dist/index.js"

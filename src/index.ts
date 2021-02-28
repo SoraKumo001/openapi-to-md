@@ -200,6 +200,31 @@ const outputComment = (
         .reduce((a, b) => a + SP(level) + `// ${b}\n`, "")
     : "";
 };
+const getTypeString = (
+  apiDocument: ApiDocument,
+  apiObject:
+    | OpenAPIV3.ReferenceObject
+    | OpenAPIV3.ArraySchemaObject
+    | OpenAPIV3.NonArraySchemaObject,
+  refs: Set<string>,
+  level: number
+) => {
+  const refName = getRefName(apiObject);
+  if (refName) return refName;
+  else if ("type" in apiObject) {
+    return apiObject.type === "object" || apiObject.type === "array"
+      ? outputObject(
+          apiDocument,
+          undefined,
+          apiObject,
+          undefined,
+          refs,
+          level + 0.5
+        ).trimEnd()
+      : apiObject.type;
+  }
+  return "";
+};
 const outputObject = (
   apiDocument: ApiDocument,
   name: string | undefined,
@@ -239,6 +264,7 @@ const outputObject = (
       });
     output += SP(nowLevel) + "}\n";
   } else if (apiObject.type === "array") {
+    output += outputRefComment(schemas, nowLevel);
     output +=
       outputObject(
         apiDocument,
@@ -248,7 +274,7 @@ const outputObject = (
         setRef,
         nowLevel
       ).trimEnd() + "[]\n";
-  } else {
+  } else if (apiObject.type) {
     output += outputRefComment(schemas, nowLevel);
     output += outputComment(apiObject, nowLevel);
     const type: string[] = Array.isArray(apiObject.type)
@@ -257,11 +283,35 @@ const outputObject = (
       ? [apiObject.type]
       : [];
     output +=
-      SP(nowLevel) +
-      `${name}${required === true ? "" : "?"}: ${type.reduce(
-        (a, b, index) => a + (index ? " | " : "") + b,
-        ""
-      )}\n`;
+      (name ? SP(nowLevel) + `${name}${required === true ? "" : "?"}: ` : "") +
+      `${type.reduce((a, b, index) => a + (index ? " | " : "") + b, "")}\n`;
+  } else if (apiObject.anyOf) {
+    output += outputRefComment(schemas, nowLevel);
+    output += outputComment(apiObject, nowLevel);
+    output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
+    apiObject.anyOf.forEach((obj, index) => {
+      const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
+      output += (index ? " & " : "") + `Partial(${typeName})`;
+    });
+    output += "\n";
+  } else if (apiObject.allOf) {
+    output += outputRefComment(schemas, nowLevel);
+    output += outputComment(apiObject, nowLevel);
+    output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
+    apiObject.allOf.forEach((obj, index) => {
+      const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
+      output += (index ? " & " : "") + `${typeName}`;
+    });
+    output += "\n";
+  } else if (apiObject.oneOf) {
+    output += outputRefComment(schemas, nowLevel);
+    output += outputComment(apiObject, nowLevel);
+    output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
+    apiObject.oneOf.forEach((obj, index) => {
+      const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
+      output += (index ? " | " : "") + `${typeName}`;
+    });
+    output += "\n";
   }
   return output;
 };
