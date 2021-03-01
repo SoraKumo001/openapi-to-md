@@ -171,11 +171,11 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
       );
     } else {
       if (apiObject.type === "object") {
-        output += outputRefComment(schemas, 0);
-        output += outputComment(apiObject, 0);
         output += outputObject(apiDocument, undefined, apiObject);
       } else if (apiObject.type === "array") {
         output += outputObject(apiDocument, undefined, apiObject);
+      } else {
+        output += JSON.stringify(apiObject, undefined, "  ") + "\n";
       }
     }
     output += "```\n\n";
@@ -191,9 +191,14 @@ const outputRefComment = (
   return refName ? SP(level) + `// ${refName}\n` : "";
 };
 const outputComment = (
+  refObject: OpenAPIV3.ReferenceObject | unknown | null,
   apiObject: OpenAPIV3.NonArraySchemaObject,
   level: number
 ) => {
+  if (refObject) {
+    const refName = getRefName(apiObject);
+    if (refName) return SP(level) + `// ${refName}\n`;
+  }
   return apiObject.description
     ? apiObject.description
         .split("\n")
@@ -246,8 +251,7 @@ const outputObject = (
   if ("$ref" in apiObject) {
     output += SP(nowLevel) + `${name}:${apiObject["$ref"]}\n`;
   } else if (apiObject.type === "object") {
-    output += outputRefComment(schemas, nowLevel);
-    output += outputComment(apiObject, nowLevel);
+    output += outputComment(schemas, apiObject, nowLevel);
     output += name ? SP(nowLevel) + `${name}: {\n` : "{\n";
     apiObject.properties &&
       Object.entries(apiObject.properties).forEach(([key, value]) => {
@@ -275,8 +279,7 @@ const outputObject = (
         nowLevel
       ).trimEnd() + "[]\n";
   } else if (apiObject.type) {
-    output += outputRefComment(schemas, nowLevel);
-    output += outputComment(apiObject, nowLevel);
+    output += outputComment(schemas, apiObject, nowLevel);
     const type: string[] = Array.isArray(apiObject.type)
       ? apiObject.type
       : apiObject.type
@@ -286,8 +289,7 @@ const outputObject = (
       (name ? SP(nowLevel) + `${name}${required === true ? "" : "?"}: ` : "") +
       `${type.reduce((a, b, index) => a + (index ? " | " : "") + b, "")}\n`;
   } else if (apiObject.anyOf) {
-    output += outputRefComment(schemas, nowLevel);
-    output += outputComment(apiObject, nowLevel);
+    output += outputComment(schemas, apiObject, nowLevel);
     output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
     apiObject.anyOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
@@ -295,8 +297,7 @@ const outputObject = (
     });
     output += "\n";
   } else if (apiObject.allOf) {
-    output += outputRefComment(schemas, nowLevel);
-    output += outputComment(apiObject, nowLevel);
+    output += outputComment(schemas, apiObject, nowLevel);
     output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
     apiObject.allOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
@@ -304,8 +305,7 @@ const outputObject = (
     });
     output += "\n";
   } else if (apiObject.oneOf) {
-    output += outputRefComment(schemas, nowLevel);
-    output += outputComment(apiObject, nowLevel);
+    output += outputComment(schemas, apiObject, nowLevel);
     output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
     apiObject.oneOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
@@ -423,6 +423,14 @@ const outputPathDatail = (apiDocument: ApiDocument) => {
         : "") +
       (operation.description
         ? `- Description  \n${markdownText(operation.description)}\n\n`
+        : "") +
+      (operation.security
+        ? `- Security  \n${markdownText(
+            operation.security.reduce(
+              (a, b) => a + Object.keys(b)[0] + "\n",
+              ""
+            )
+          )}\n`
         : "") +
       (operation.parameters
         ? outputParameters(apiDocument, operation.parameters)
