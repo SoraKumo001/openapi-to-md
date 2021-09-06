@@ -39,7 +39,7 @@ const createApiDocument = (document: OpenAPIV3.Document): ApiDocument => {
       pathMethods.push({
         path,
         method: method.toUpperCase(),
-        operation: operation,
+        operation: operation as OpenAPIV3.OperationObject,
       });
     }
   }
@@ -55,6 +55,11 @@ const createApiDocument = (document: OpenAPIV3.Document): ApiDocument => {
   return { document, pathMethods, references };
 };
 
+const convertPath = (path: string) =>
+  path
+    .replace(/[!@#$%^&*()+|~=`[\]{};':",./<>?]/g, "")
+    .replace(/ /g, "-")
+    .toLowerCase();
 const outputPathTable = ({ document, pathMethods }: ApiDocument) => {
   let output = `# ${document.info.title || "Api-Document"}\n\n> Version ${
     document.info.version || "1.0.0"
@@ -69,9 +74,9 @@ ${document.info.description ? "\n" + document.info.description + "\n" : ""}
   output += pathMethods.reduce(
     (a, { path, method, operation }) =>
       a +
-      `| ${method.toUpperCase()} | [${path}](#[${method}]${path}) | ${
-        operation.summary || ""
-      } |\n`,
+      `| ${method.toUpperCase()} | [${path}](#${method.toLowerCase()}${convertPath(
+        path
+      )}) | ${operation.summary || ""} |\n`,
     ""
   );
 
@@ -93,7 +98,9 @@ const outputReferenceTable = (apiDocument: ApiDocument) => {
     }>(apiDocument, value);
     output += `| ${
       v.name || v.title || key ? key.substr(key.lastIndexOf("/") + 1) : ""
-    } | ${key ? `[${key}](${key})` : ""} | ${v.description || ""} |\n`;
+    } | ${key ? `[${key}](#${convertPath(key)})` : ""} | ${
+      v.description || ""
+    } |\n`;
   });
 
   return output + "\n";
@@ -455,7 +462,7 @@ export const convertMarkdown = async (srcFile: string, destFile?: string) => {
     return;
   }
 
-  const document = readDoument<Document>(src);
+  const document = readDoument<Document>(src.toString());
   if (!document) {
     console.error(`'${srcFile}'  is not 'yaml' or 'json'`);
     return;
