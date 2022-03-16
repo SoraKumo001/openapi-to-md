@@ -2,6 +2,7 @@
 import { promises as fs } from "fs";
 import YAML from "yaml";
 import { OpenAPIV3 } from "openapi-types";
+import { program } from "commander";
 const converter = require("swagger2openapi");
 
 type References = { [key: string]: unknown };
@@ -157,8 +158,8 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
     | OpenAPIV3.RequestBodyObject
     | OpenAPIV3.ParameterObject
   >(apiDocument, schemas);
+  if (!apiObject) return "";
   let output = "";
-
   if ("content" in apiObject) {
     Object.entries(apiObject.content!).forEach(([key, value]) => {
       output += `- ${key}\n\n`;
@@ -453,7 +454,11 @@ const outputPathDatail = (apiDocument: ApiDocument) => {
   return output;
 };
 
-export const convertMarkdown = async (srcFile: string, destFile?: string) => {
+export const convertMarkdown = async (
+  srcFile: string,
+  destFile: string | undefined,
+  sort = false
+) => {
   const src = await fs
     .readFile(srcFile, { encoding: "utf8" })
     .catch(() => null);
@@ -472,7 +477,22 @@ export const convertMarkdown = async (srcFile: string, destFile?: string) => {
       ? document
       : (await converter.convertObj(document, {})).openapi
   );
-
+  if (sort) {
+    apiDocument.pathMethods.sort((a, b) =>
+      a.path !== b.path
+        ? a.path < b.path
+          ? -1
+          : 1
+        : a.method < b.method
+        ? -1
+        : 1
+    );
+    apiDocument.references = Object.fromEntries(
+      Object.entries(apiDocument.references).sort(([a], [b]) =>
+        a < b ? -1 : 1
+      )
+    );
+  }
   let output = outputPathTable(apiDocument);
   output += outputReferenceTable(apiDocument);
   output += outputPathDatail(apiDocument);
@@ -484,9 +504,11 @@ export const convertMarkdown = async (srcFile: string, destFile?: string) => {
     console.log(output);
   }
 };
-
-if (process.argv.length < 3) {
-  console.log("swagger-to-md src-file [dist-file]");
-} else {
-  convertMarkdown(process.argv[2], process.argv[3]);
-}
+program
+  .version(process.env.npm_package_version || "unknown")
+  .option("-s, --sort", "sort", false)
+  .arguments("<source> [destination]")
+  .action((src, dest, options) => {
+    convertMarkdown(src, dest, options["sort"]);
+  });
+program.parse(process.argv);

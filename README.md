@@ -11,7 +11,17 @@ OpenAPI(v2,v3) => Markdown
 
 ## usage
 
-openapi-to-md src-file [dist-file]  
+```
+Usage: openapi-to-md [options] <source> [destination]
 
-openapi-to-md openapi.yaml README.md  
-openapi-to-md openapi.json > README.md  
+Options:
+  -V, --version  output the version number
+  -s, --sort     sort (default: false)
+  -h, --help     display help for command
+```
+
+```sh
+openapi-to-md -s openapi.yaml README.md
+openapi-to-md openapi.yaml README.md
+openapi-to-md openapi.json > README.md
+```

@@ -1,30 +1,32 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.12",
+  "version": "1.0.17",
   "main": "dist/index.js",
   "bin": {
     "openapi-to-md": "dist/index.js"
   },
   "scripts": {
     "test": "ts-node src/index.ts test/test.yaml test/readme.md",
+    "test:sort": "ts-node src/index.ts -s test/test.yaml test/readme.md",
     "build": "tsc -b",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src"
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^16.11.13",
-    "@typescript-eslint/eslint-plugin": "^5.7.0",
-    "@typescript-eslint/parser": "^5.7.0",
-    "eslint": "^8.4.1",
-    "eslint-config-prettier": "^8.3.0",
+    "@types/node": "^17.0.21",
+    "@typescript-eslint/eslint-plugin": "^5.15.0",
+    "@typescript-eslint/parser": "^5.15.0",
+    "eslint": "^8.11.0",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.0.0",
     "openapi-types": "^10.0.0",
     "prettier": "^2.5.1",
-    "ts-node": "^10.4.0",
-    "typescript": "^4.5.4"
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.2"
   },
   "dependencies": {
+    "commander": "^9.0.0",
     "swagger2openapi": "*",
     "yaml": "*"
   },
