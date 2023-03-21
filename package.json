@@ -1,12 +1,12 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "main": "dist/index.js",
   "bin": {
     "openapi-to-md": "dist/index.js"
   },
   "scripts": {
-    "test": "ts-node src/index.ts test/test.yaml test/readme.md",
+    "test": "ts-node src/index.ts test/ghec.2022-11-28.yaml test/readme.md",
     "test:sort": "ts-node src/index.ts -s test/test.yaml test/readme.md",
     "build": "tsc -b",
     "lint": "eslint src",
@@ -14,19 +14,19 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^17.0.21",
-    "@typescript-eslint/eslint-plugin": "^5.15.0",
-    "@typescript-eslint/parser": "^5.15.0",
-    "eslint": "^8.11.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.0.0",
-    "openapi-types": "^10.0.0",
-    "prettier": "^2.5.1",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.2"
+    "@types/node": "^18.15.5",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "openapi-types": "^12.1.0",
+    "prettier": "^2.8.6",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.2"
   },
   "dependencies": {
-    "commander": "^9.0.0",
+    "commander": "^10.0.0",
     "swagger2openapi": "*",
     "yaml": "*"
   },
