@@ -293,15 +293,19 @@ const outputObject = (
       : apiObject.type
       ? [apiObject.type]
       : [];
-    output +=
-      (name ? SP(nowLevel) + `${name}${required === true ? "" : "?"}: ` : "");
+    output += name
+      ? SP(nowLevel) + `${name}${required === true ? "" : "?"}: `
+      : "";
     if (apiObject.enum) {
-      output += `enum[${apiObject.enum.join(', ')}]`
+      output += `enum[${apiObject.enum.join(", ")}]`;
     } else {
-      output += `${type.reduce((a, b, index) => a + (index ? " | " : "") + b, "")}`;
+      output += `${type.reduce(
+        (a, b, index) => a + (index ? " | " : "") + b,
+        ""
+      )}`;
     }
     if (apiObject.default) {
-      output += ` //default: ${apiObject.default}`
+      output += ` //default: ${apiObject.default}`;
     }
     output += "\n";
   } else if (apiObject.anyOf) {
