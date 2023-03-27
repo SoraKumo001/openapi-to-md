@@ -167,7 +167,9 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
     });
   } else {
     output += "```ts\n";
-    if ("in" in apiObject) {
+    if ("in" in apiObject && !("schema" in apiObject)) {
+      output += JSON.stringify(apiObject, undefined, "  ") + "\n";
+    } else if ("in" in apiObject) {
       output += outputRefComment(schemas, 0);
       output += outputObject(
         apiDocument,
