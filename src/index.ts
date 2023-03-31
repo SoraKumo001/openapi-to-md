@@ -167,9 +167,7 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
     });
   } else {
     output += "```ts\n";
-    if ("in" in apiObject && !("schema" in apiObject)) {
-      output += JSON.stringify(apiObject, undefined, "  ") + "\n";
-    } else if ("in" in apiObject) {
+    if ("schema" in apiObject) {
       output += outputRefComment(schemas, 0);
       output += outputObject(
         apiDocument,
@@ -179,6 +177,8 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
           ? apiObject.required?.includes(apiObject.name)
           : apiObject.required
       );
+    } else if ("in" in apiObject) {
+      output += JSON.stringify(apiObject, undefined, "  ") + "\n";
     } else {
       if (apiObject.type === "object") {
         output += outputObject(apiDocument, undefined, apiObject);
