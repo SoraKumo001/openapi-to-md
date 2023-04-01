@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { promises as fs } from "fs";
 import YAML from "yaml";
-import { OpenAPIV3 } from "openapi-types";
+import { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import { program } from "commander";
-const converter = require("swagger2openapi");
+import converter from "swagger2openapi";
 
 type References = { [key: string]: unknown };
 
-const readDoument = <T>(src: string): T | null => {
+const readDocument = <T>(src: string): T | null => {
   try {
     return YAML.parse(src) as T;
   } catch (e) {}
@@ -106,9 +106,9 @@ const outputReferenceTable = (apiDocument: ApiDocument) => {
 
   return output + "\n";
 };
-const getRefName = (refObjecgt: unknown | OpenAPIV3.ReferenceObject) => {
-  if (typeof refObjecgt === "object" && refObjecgt && "$ref" in refObjecgt) {
-    return (refObjecgt as OpenAPIV3.ReferenceObject)["$ref"];
+const getRefName = (refObject: unknown | OpenAPIV3.ReferenceObject) => {
+  if (typeof refObject === "object" && refObject && "$ref" in refObject) {
+    return (refObject as OpenAPIV3.ReferenceObject)["$ref"];
   }
   return undefined;
 };
@@ -433,7 +433,7 @@ const outputResponses = (
   }
   return output;
 };
-const outputPathDatail = (apiDocument: ApiDocument) => {
+const outputPathDetail = (apiDocument: ApiDocument) => {
   const { pathMethods } = apiDocument;
   let output = `## Path Details\n\n`;
   output += pathMethods.reduce(
@@ -481,7 +481,9 @@ export const convertMarkdown = async (
     return;
   }
 
-  const document = readDoument<Document>(src.toString());
+  const document = readDocument<OpenAPIV2.Document | OpenAPIV3.Document>(
+    src.toString()
+  );
   if (!document) {
     console.error(`'${srcFile}'  is not 'yaml' or 'json'`);
     return;
@@ -509,7 +511,7 @@ export const convertMarkdown = async (
   }
   let output = outputPathTable(apiDocument);
   output += outputReferenceTable(apiDocument);
-  output += outputPathDatail(apiDocument);
+  output += outputPathDetail(apiDocument);
   output += outputReferences(apiDocument);
   output = output.trimEnd();
   if (destFile) {
