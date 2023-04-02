@@ -4,6 +4,7 @@ import YAML from "yaml";
 import { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import { program } from "commander";
 import converter from "swagger2openapi";
+import { getData } from "./libs/getData";
 
 type References = { [key: string]: unknown };
 
@@ -27,8 +28,18 @@ interface ApiDocument {
   pathMethods: PathMethod[];
   references: References;
 }
+
+/**
+ * Replaces newlines with two spaces and a newline character, as required by
+ * Markdown for a line break.
+ */
 const markdownText = (text: string) => text.replace(/\n/g, "  \n");
 
+/**
+ * Creates an API document from an OpenAPI document.
+ * @param document The OpenAPI document.
+ * @returns The API document.
+ */
 const createApiDocument = (document: OpenAPIV3.Document): ApiDocument => {
   const pathMethods: PathMethod[] = [];
   for (const [path, pathItem] of Object.entries<
@@ -56,6 +67,13 @@ const createApiDocument = (document: OpenAPIV3.Document): ApiDocument => {
   return { document, pathMethods, references };
 };
 
+/**
+ * Converts a path to a format that can be used in a URL, such as replacing
+ * spaces.
+ *
+ * @param path Path to convert
+ * @returns The converted path
+ */
 const convertPath = (path: string) =>
   path
     .replace(/[!@#$%^&*()+|~=`[\]{};':",./<>?]/g, "")
@@ -83,6 +101,12 @@ ${document.info.description ? "\n" + document.info.description + "\n" : ""}
 
   return output + "\n";
 };
+
+/**
+ * outputReferenceTable outputs a Markdown table of all API references.
+ *
+ * @param apiDocument The API document to output.
+ */
 const outputReferenceTable = (apiDocument: ApiDocument) => {
   const { references } = apiDocument;
   let output = `## Reference Table
@@ -106,12 +130,20 @@ const outputReferenceTable = (apiDocument: ApiDocument) => {
 
   return output + "\n";
 };
-const getRefName = (refObject: unknown | OpenAPIV3.ReferenceObject) => {
+
+/**
+ * Return the name of a reference object.
+ * @param refObject
+ */
+const getRefName = (
+  refObject: unknown | OpenAPIV3.ReferenceObject
+): string | undefined => {
   if (typeof refObject === "object" && refObject && "$ref" in refObject) {
     return (refObject as OpenAPIV3.ReferenceObject)["$ref"];
   }
   return undefined;
 };
+
 const getApiObject: {
   <T = unknown | OpenAPIV3.ReferenceObject>(
     apiDocument: ApiDocument,
@@ -152,6 +184,7 @@ const outputParamSchemas = (
   }
   return output;
 };
+
 const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
   const apiObject = getApiObject<
     | OpenAPIV3.SchemaObject
@@ -457,10 +490,10 @@ const outputPathDetail = (apiDocument: ApiDocument) => {
       (operation.parameters
         ? outputParameters(apiDocument, operation.parameters)
         : "") +
-      ("requestBody" in operation
+      (operation.requestBody
         ? outputRequestBody(apiDocument, operation.requestBody)
         : "") +
-      ("responses" in operation
+      (operation.responses
         ? outputResponses(apiDocument, operation.responses)
         : ""),
     ""
@@ -473,9 +506,7 @@ export const convertMarkdown = async (
   destFile: string | undefined,
   sort = false
 ) => {
-  const src = await fs
-    .readFile(srcFile, { encoding: "utf8" })
-    .catch(() => null);
+  const src = await getData(srcFile);
   if (!src) {
     console.error(`'${srcFile}' not found`);
     return;
@@ -520,11 +551,13 @@ export const convertMarkdown = async (
     console.log(output);
   }
 };
+
 program
   .version(process.env.npm_package_version || "unknown")
   .option("-s, --sort", "sort", false)
   .arguments("<source> [destination]")
   .action((src, dest, options) => {
-    convertMarkdown(src, dest, options["sort"]);
+    convertMarkdown(src, dest, options.sort);
   });
+
 program.parse(process.argv);

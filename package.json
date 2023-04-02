@@ -1,13 +1,14 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "main": "dist/index.js",
   "bin": {
     "openapi-to-md": "dist/index.js"
   },
   "scripts": {
-    "test": "ts-node src/index.ts test/test.yaml test/readme.md",
-    "test:sort": "ts-node src/index.ts -s test/test.yaml test/readme.md",
+    "test": "ts-node src/index.ts test/api.github.com.yaml test/README.md",
+    "test:sort": "ts-node src/index.ts -s test/api.github.com.yaml test/README.md",
+    "test:url": "ts-node src/index.ts -s https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.yaml test/README.md",
     "build": "tsc -b",
     "lint": "eslint src",
     "lint:fix": "eslint --fix src"

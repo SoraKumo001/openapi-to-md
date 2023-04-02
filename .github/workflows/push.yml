@@ -1,0 +1,59 @@
+name: Push
+permissions: write-all
+on:
+  push:
+jobs:
+  CleanupRuns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: rokroskar/workflow-run-cleanup-action@master
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+  Modules:
+    name: Modules
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache modules(yarn.lock)
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.OS }}-build-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.OS }}-build-
+      - name: Package install
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: yarn
+  StorybookBuild:
+    name: Build
+    needs: Modules
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache modules(yarn.lock)
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.OS }}-build-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.OS }}-build-
+      - name: Test
+        run: |
+          mkdir test
+          yarn test:url
+      - name: Deploy
+        if: github.ref_name == 'master'
+        run: |
+          cd test
+          git init
+          git config --global user.name $GITHUB_ACTOR
+          git config --global user.email ${GITHUB_ACTOR}@git
+          git remote add origin https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/$GITHUB_REPOSITORY
+          git checkout -b sample
+          git add .
+          git commit -m "create sample"
+          git push -f origin sample

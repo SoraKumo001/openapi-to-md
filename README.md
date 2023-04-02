@@ -24,4 +24,5 @@ Options:
 openapi-to-md -s openapi.yaml README.md
 openapi-to-md openapi.yaml README.md
 openapi-to-md openapi.json > README.md
+openapi-to-md https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.yaml README.md
 ```
