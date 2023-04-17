@@ -199,7 +199,7 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
       output += outputSchemas(apiDocument, value.schema);
     });
   } else {
-    output += "```ts\n";
+    output += "```typescript\n";
     if ("schema" in apiObject) {
       output += outputRefComment(schemas, 0);
       output += outputObject(
