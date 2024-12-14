@@ -15,17 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v3
-      - name: Cache modules(yarn.lock)
+      - run: corepack enable pnpm
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Cache node modules
         id: cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.OS }}-build-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.OS }}-build-
-      - name: Package install
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+          lookup-only: true
+      - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: yarn
+        run: pnpm install --frozen-lockfile
   StorybookBuild:
     name: Build
     needs: Modules
@@ -33,18 +37,22 @@ jobs:
     env:
       GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
     steps:
-      - uses: actions/checkout@v3
-      - name: Cache modules(yarn.lock)
-        id: cache
-        uses: actions/cache@v3
+      - run: corepack enable pnpm
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Cache node modules
+        uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.OS }}-build-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.OS }}-build-
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Test
         run: |
           mkdir test
-          yarn test:url
+          npm run test:url
       - name: Deploy
         if: github.ref_name == 'master'
         run: |

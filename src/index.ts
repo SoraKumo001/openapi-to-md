@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { promises as fs } from "fs";
-import YAML from "yaml";
-import { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import { program } from "commander";
+import { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import converter from "swagger2openapi";
+import YAML from "yaml";
 import { getData } from "./libs/getData";
 
 type References = { [key: string]: unknown };
@@ -296,7 +296,7 @@ const outputObject = (
   } else if (apiObject.type === "object") {
     output += outputComment(schemas, apiObject, nowLevel);
     output += name ? SP(nowLevel) + `${name}: {\n` : "{\n";
-    apiObject.properties &&
+    if (apiObject.properties) {
       Object.entries(apiObject.properties).forEach(([key, value]) => {
         output += outputObject(
           apiDocument,
@@ -309,6 +309,7 @@ const outputObject = (
           nowLevel + 1
         );
       });
+    }
     output += SP(nowLevel) + "}\n";
   } else if (apiObject.type === "array") {
     output += outputRefComment(schemas, nowLevel);
@@ -326,8 +327,8 @@ const outputObject = (
     const type: string[] = Array.isArray(apiObject.type)
       ? apiObject.type
       : apiObject.type
-      ? [apiObject.type]
-      : [];
+        ? [apiObject.type]
+        : [];
     output += name
       ? SP(nowLevel) + `${name}${required === true ? "" : "?"}: `
       : "";
@@ -531,8 +532,8 @@ export const convertMarkdown = async (
           ? -1
           : 1
         : a.method < b.method
-        ? -1
-        : 1
+          ? -1
+          : 1
     );
     apiDocument.references = Object.fromEntries(
       Object.entries(apiDocument.references).sort(([a], [b]) =>
