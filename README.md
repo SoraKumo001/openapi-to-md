@@ -1,5 +1,10 @@
 # openapi-to-md
 
+[![](https://img.shields.io/npm/l/openapi-to-md)](https://www.npmjs.com/package/openapi-to-md)
+[![](https://img.shields.io/npm/v/openapi-to-md)](https://www.npmjs.com/package/openapi-to-md)
+[![](https://img.shields.io/npm/dw/openapi-to-md)](https://www.npmjs.com/package/openapi-to-md)
+[![](https://deepwiki.com/badge.svg)](https://deepwiki.com/SoraKumo001/openapi-to-md)
+
 ## description
 
 OpenAPI(v2,v3) => Markdown
