@@ -300,4 +300,105 @@ paths:
     const result = await convertMarkdown(mockJson);
     expect(result).toContain("JSON API");
   });
+
+  it("should handle newlines in summary and description for tables", async () => {
+    const mockYaml = `
+openapi: 3.0.0
+info:
+  title: Newline API
+  version: 1.0.0
+components:
+  schemas:
+    MySchema:
+      description: |
+        Line 1
+        Line 2
+      type: string
+paths:
+  /test:
+    get:
+      summary: |
+        Summary Line 1
+        Summary Line 2
+      responses:
+        '200':
+          description: OK
+`;
+    const result = await convertMarkdown(mockYaml);
+    expect(result).toContain("Summary Line 1<br>Summary Line 2");
+    expect(result).toContain("Line 1<br>Line 2");
+  });
+
+  it("should handle empty or invalid schemas gracefully", async () => {
+    const mockYaml = `
+openapi: 3.0.0
+info:
+  title: Edge Case API
+  version: 1.0.0
+paths:
+  /empty:
+    get:
+      responses:
+        '204':
+          description: No Content
+  /invalid:
+    get:
+      parameters:
+        - name: broken
+          in: query
+          # Missing schema
+      responses:
+        '200':
+          description: OK
+`;
+    const result = await convertMarkdown(mockYaml);
+    expect(result).toContain("Edge Case API");
+  });
+
+  it("should handle circular references", async () => {
+    const mockYaml = `
+openapi: 3.0.0
+info:
+  title: Circular API
+  version: 1.0.0
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        child:
+          $ref: '#/components/schemas/Node'
+paths: {}
+`;
+    const result = await convertMarkdown(mockYaml);
+    expect(result).toContain("Node");
+    expect(result).toContain("child:");
+  });
+
+  it("should handle parameters in path item", async () => {
+    const mockYaml = `
+openapi: 3.0.0
+info:
+  title: Path Param API
+  version: 1.0.0
+paths:
+  /param/{id}:
+    parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+        required: true
+    get:
+      responses:
+        '200':
+          description: OK
+`;
+    // Note: The current implementation of converter.ts skips 'parameters' in path items loop:
+    // if (method === "parameters") continue;
+    // So this test mainly ensures it doesn't crash, even if it doesn't output them.
+    // If the implementation changes to support common parameters, this test can be updated.
+    const result = await convertMarkdown(mockYaml);
+    expect(result).toBeDefined();
+  });
 });
