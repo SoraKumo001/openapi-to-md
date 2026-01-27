@@ -1,20 +1,23 @@
 #!/usr/bin/env node
-import { promises as fs } from "fs";
-import { program } from "commander";
 import { OpenAPIV2, OpenAPIV3 } from "openapi-types";
 import converter from "swagger2openapi";
 import YAML from "yaml";
-import { getData } from "./libs/getData";
 
 type References = { [key: string]: unknown };
 
 const readDocument = <T>(src: string): T | null => {
   try {
-    return YAML.parse(src) as T;
-  } catch (e) {}
+    const doc = YAML.parse(src) as T;
+    if (typeof doc === "object" && doc !== null) return doc;
+  } catch {
+    //
+  }
   try {
-    return JSON.parse(src) as T;
-  } catch (e) {}
+    const doc = JSON.parse(src) as T;
+    if (typeof doc === "object" && doc !== null) return doc;
+  } catch {
+    //
+  }
   return null;
 };
 
@@ -51,7 +54,7 @@ const createApiDocument = (document: OpenAPIV3.Document): ApiDocument => {
       pathMethods.push({
         path,
         method: method.toUpperCase(),
-        operation: operation as OpenAPIV3.OperationObject
+        operation: operation as OpenAPIV3.OperationObject,
       });
     }
   }
@@ -94,9 +97,9 @@ ${document.info.description ? "\n" + document.info.description + "\n" : ""}
     (a, { path, method, operation }) =>
       a +
       `| ${method.toUpperCase()} | [${path}](#${method.toLowerCase()}${convertPath(
-        path
+        path,
       )}) | ${operation.summary || ""} |\n`,
-    ""
+    "",
   );
 
   return output + "\n";
@@ -136,7 +139,7 @@ const outputReferenceTable = (apiDocument: ApiDocument) => {
  * @param refObject
  */
 const getRefName = (
-  refObject: unknown | OpenAPIV3.ReferenceObject
+  refObject: unknown | OpenAPIV3.ReferenceObject,
 ): string | undefined => {
   if (typeof refObject === "object" && refObject && "$ref" in refObject) {
     return (refObject as OpenAPIV3.ReferenceObject)["$ref"];
@@ -147,17 +150,17 @@ const getRefName = (
 const getApiObject: {
   <T = unknown | OpenAPIV3.ReferenceObject>(
     apiDocument: ApiDocument,
-    object: OpenAPIV3.ReferenceObject | unknown
+    object: OpenAPIV3.ReferenceObject | unknown,
   ): T;
   <T = unknown | OpenAPIV3.ReferenceObject>(
     apiDocument: ApiDocument,
     object: OpenAPIV3.ReferenceObject | unknown,
-    refs?: Set<string>
+    refs?: Set<string>,
   ): T | OpenAPIV3.ReferenceObject;
 } = <T = unknown | OpenAPIV3.ReferenceObject>(
   { references }: ApiDocument,
   object: OpenAPIV3.ReferenceObject | unknown,
-  refs?: Set<string>
+  refs?: Set<string>,
 ) => {
   const refName = getRefName(object);
   if (refName) {
@@ -175,7 +178,7 @@ const getApiObject: {
 
 const outputParamSchemas = (
   apiDocument: ApiDocument,
-  parameters: OpenAPIV3.ParameterObject[]
+  parameters: OpenAPIV3.ParameterObject[],
 ) => {
   let output = "";
   for (const param of parameters) {
@@ -208,18 +211,12 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
         apiObject.schema!,
         Array.isArray(apiObject.required)
           ? apiObject.required?.includes(apiObject.name)
-          : apiObject.required
+          : apiObject.required,
       );
     } else if ("in" in apiObject) {
       output += JSON.stringify(apiObject, undefined, "  ") + "\n";
     } else {
-      if (apiObject.type === "object") {
-        output += outputObject(apiDocument, undefined, apiObject);
-      } else if (apiObject.type === "array") {
-        output += outputObject(apiDocument, undefined, apiObject);
-      } else {
-        output += JSON.stringify(apiObject, undefined, "  ") + "\n";
-      }
+      output += outputObject(apiDocument, undefined, apiObject);
     }
     output += "```\n\n";
   }
@@ -228,7 +225,7 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
 const SP = (size: number) => "".padEnd(size * 2);
 const outputRefComment = (
   apiObject: OpenAPIV3.ReferenceObject | unknown,
-  level: number
+  level: number,
 ) => {
   const refName = getRefName(apiObject);
   return refName ? SP(level) + `// ${refName}\n` : "";
@@ -236,7 +233,7 @@ const outputRefComment = (
 const outputComment = (
   refObject: OpenAPIV3.ReferenceObject | unknown | null,
   apiObject: OpenAPIV3.NonArraySchemaObject,
-  level: number
+  level: number,
 ) => {
   if (refObject) {
     const refName = getRefName(apiObject);
@@ -255,7 +252,7 @@ const getTypeString = (
     | OpenAPIV3.ArraySchemaObject
     | OpenAPIV3.NonArraySchemaObject,
   refs: Set<string>,
-  level: number
+  level: number,
 ) => {
   const refName = getRefName(apiObject);
   if (refName) return refName;
@@ -267,7 +264,7 @@ const getTypeString = (
           apiObject,
           undefined,
           refs,
-          level + 0.5
+          level + 0.5,
         ).trimEnd()
       : apiObject.type;
   }
@@ -279,14 +276,14 @@ const outputObject = (
   schemas: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
   required?: boolean,
   refs?: Set<string>,
-  level?: number
+  level?: number,
 ) => {
   const nowLevel = level || 0;
   const setRef = refs || new Set();
   const apiObject = getApiObject<OpenAPIV3.SchemaObject>(
     apiDocument,
     schemas,
-    setRef
+    setRef,
   );
   if (!apiObject) return "";
 
@@ -306,7 +303,7 @@ const outputObject = (
             ? apiObject.required?.includes(key)
             : apiObject.required,
           setRef,
-          nowLevel + 1
+          nowLevel + 1,
         );
       });
     }
@@ -320,7 +317,7 @@ const outputObject = (
         apiObject.items,
         undefined,
         setRef,
-        nowLevel
+        nowLevel,
       ).trimEnd() + "[]\n";
   } else if (apiObject.type) {
     output += outputComment(schemas, apiObject, nowLevel);
@@ -337,7 +334,7 @@ const outputObject = (
     } else {
       output += `${type.reduce(
         (a, b, index) => a + (index ? " | " : "") + b,
-        ""
+        "",
       )}`;
     }
     if (apiObject.default) {
@@ -374,13 +371,13 @@ const outputObject = (
 
 const outputParameters = (
   apiDocument: ApiDocument,
-  parameters: (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[]
+  parameters: (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[],
 ) => {
   const p: { [key: string]: OpenAPIV3.ParameterObject[] } = {};
   for (const param of parameters) {
     const apiParam = getApiObject<OpenAPIV3.ParameterObject>(
       apiDocument,
-      param
+      param,
     );
     if (!apiParam) continue;
     p[apiParam.in] = p[apiParam.in]
@@ -415,11 +412,11 @@ const outputRequestBody = (
   requestBody:
     | OpenAPIV3.ReferenceObject
     | OpenAPIV3.RequestBodyObject
-    | undefined
+    | undefined,
 ) => {
   const body = getApiObject<OpenAPIV3.RequestBodyObject>(
     apiDocument,
-    requestBody
+    requestBody,
   );
   let output = "#### RequestBody\n\n";
   output += outputSchemas(apiDocument, body);
@@ -427,11 +424,11 @@ const outputRequestBody = (
 };
 const outputExamples = (
   apiDocument: ApiDocument,
-  examples: OpenAPIV3.MediaTypeObject["examples"]
+  examples: OpenAPIV3.MediaTypeObject["examples"],
 ) => {
   const e = getApiObject<OpenAPIV3.MediaTypeObject["examples"]>(
     apiDocument,
-    examples
+    examples,
   );
   if (!e) return "";
   let output = "- Examples\n\n";
@@ -445,12 +442,12 @@ const outputExamples = (
 };
 const outputResponses = (
   apiDocument: ApiDocument,
-  responses: OpenAPIV3.ResponsesObject | undefined
+  responses: OpenAPIV3.ResponsesObject | undefined,
 ) => {
   if (!responses) return "";
   const responsesObject = getApiObject<OpenAPIV3.ResponsesObject>(
     apiDocument,
-    responses
+    responses,
   );
   let output = "#### Responses\n\n";
 
@@ -487,8 +484,8 @@ const outputPathDetail = (apiDocument: ApiDocument) => {
         ? `- Security  \n${markdownText(
             operation.security.reduce(
               (a, b) => a + Object.keys(b)[0] + "\n",
-              ""
-            )
+              "",
+            ),
           )}\n`
         : "") +
       (operation.parameters
@@ -500,33 +497,22 @@ const outputPathDetail = (apiDocument: ApiDocument) => {
       (operation.responses
         ? outputResponses(apiDocument, operation.responses)
         : ""),
-    ""
+    "",
   );
   return output;
 };
 
-export const convertMarkdown = async (
-  srcFile: string,
-  destFile: string | undefined,
-  sort = false
-) => {
-  const src = await getData(srcFile);
-  if (!src) {
-    console.error(`'${srcFile}' not found`);
-    return;
-  }
-
+export const convertMarkdown = async (src: string, sort = false) => {
   const document = readDocument<OpenAPIV2.Document | OpenAPIV3.Document>(
-    src.toString()
+    src.toString(),
   );
   if (!document) {
-    console.error(`'${srcFile}'  is not 'yaml' or 'json'`);
-    return;
+    return undefined;
   }
   const apiDocument = createApiDocument(
     "openapi" in document
       ? document
-      : (await converter.convertObj(document, {})).openapi
+      : (await converter.convertObj(document, {})).openapi,
   );
   if (sort) {
     apiDocument.pathMethods.sort((a, b) =>
@@ -536,12 +522,12 @@ export const convertMarkdown = async (
           : 1
         : a.method < b.method
           ? -1
-          : 1
+          : 1,
     );
     apiDocument.references = Object.fromEntries(
       Object.entries(apiDocument.references).sort(([a], [b]) =>
-        a < b ? -1 : 1
-      )
+        a < b ? -1 : 1,
+      ),
     );
   }
   let output = outputPathTable(apiDocument);
@@ -549,19 +535,5 @@ export const convertMarkdown = async (
   output += outputPathDetail(apiDocument);
   output += outputReferences(apiDocument);
   output = output.trimEnd();
-  if (destFile) {
-    fs.writeFile(destFile, output, "utf8");
-  } else {
-    console.log(output);
-  }
+  return output;
 };
-
-program
-  .version(process.env.npm_package_version || "unknown")
-  .option("-s, --sort", "sort", false)
-  .arguments("<source> [destination]")
-  .action((src, dest, options) => {
-    convertMarkdown(src, dest, options.sort);
-  });
-
-program.parse(process.argv);

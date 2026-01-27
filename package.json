@@ -1,37 +1,43 @@
 {
   "name": "openapi-to-md",
-  "version": "1.0.27",
+  "version": "1.1.0",
   "main": "dist/index.js",
   "bin": {
-    "openapi-to-md": "dist/index.js"
+    "openapi-to-md": "dist/openapi-to-md.js"
   },
   "scripts": {
-    "test": "ts-node src/index.ts test/api.github.com.yaml test/README.md",
-    "test:sort": "ts-node src/index.ts -s test/api.github.com.yaml test/README.md",
-    "test:url": "ts-node src/index.ts -s https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.yaml test/README.md",
     "build": "tsc -b",
+    "lint:fix": "eslint --fix src",
     "lint": "eslint src",
-    "lint:fix": "eslint --fix src"
+    "test": "vitest --coverage",
+    "test:manual": "tsx src/openapi-to-md.ts test/tmp/api.github.com.yaml test/tmp/README.md",
+    "test:sort": "tsx src/openapi-to-md.ts -s test/tmp/api.github.com.yaml test/tmp/README.md",
+    "test:url": "tsx src/openapi-to-md.ts -s https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.yaml test/tmp/README.md"
   },
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "9.37.0",
-    "@types/node": "^24.7.0",
+    "@types/node": "^24.10.9",
     "@types/swagger2openapi": "^7.0.4",
-    "@typescript-eslint/eslint-plugin": "^8.46.0",
-    "@typescript-eslint/parser": "^8.46.0",
-    "eslint": "9.37.0",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vitest/coverage-v8": "4.0.18",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "5.5.4",
     "openapi-types": "^12.1.3",
-    "ts-node": "^10.9.2",
+    "prettier": "3.7.4",
+    "tsx": "4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.0"
+    "typescript-eslint": "^8.54.0",
+    "vitest": "4.0.18"
   },
   "dependencies": {
-    "commander": "^14.0.1",
-    "swagger2openapi": "*",
-    "yaml": "*"
+    "commander": "^14.0.2",
+    "swagger2openapi": "^7.0.8",
+    "yaml": "^2.8.2"
   },
   "description": "Convert OpenAPI format to Markdown",
   "repository": {

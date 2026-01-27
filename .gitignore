@@ -1,3 +1,5 @@
 /node_modules
 /dist
-/test
+/test/coverage
+/test/tmp
+tsconfig.tsbuildinfo

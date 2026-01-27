@@ -6,3 +6,4 @@ tsconfig.json
 .eslintrc.json
 .github
 pnpm-lock.yaml
+tsconfig.tsbuildinfo

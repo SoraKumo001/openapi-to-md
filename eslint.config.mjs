@@ -1,23 +1,23 @@
 import eslint from "@eslint/js";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
 import importPlugin from "eslint-plugin-import";
+import prettierPlugin from "eslint-plugin-prettier";
 import tslint from "typescript-eslint";
 
 export default [
   eslint.configs.recommended,
   ...tslint.configs.recommended,
+  eslintConfigPrettier,
   {
-    plugins: { import: importPlugin }
-  },
-  {
+    plugins: {
+      import: importPlugin,
+      prettier: prettierPlugin,
+    },
     rules: {
-      "comma-dangle": ["error", "never"]
-    }
-  },
-  {
-    rules: {
-      "@typescript-eslint/no-unused-vars": 0,
-      "no-empty-pattern": 0,
-      "no-empty": 0,
+      "@typescript-eslint/no-namespace": 0,
+      "@typescript-eslint/no-unused-vars": "warn",
+      "no-empty-pattern": 1,
+      "no-empty": 1,
       "import/order": [
         "warn",
         {
@@ -28,15 +28,24 @@ export default [
             ["parent", "sibling"],
             "object",
             "type",
-            "index"
+            "index",
           ],
           pathGroupsExcludedImportTypes: ["builtin"],
           alphabetize: {
             order: "asc",
-            caseInsensitive: true
-          }
-        }
-      ]
-    }
-  }
+            caseInsensitive: true,
+          },
+        },
+      ],
+      "prettier/prettier": [
+        0,
+        {
+          semi: true,
+          singleQuote: false,
+          printWidth: 100,
+          trailingComma: "es5",
+        },
+      ],
+    },
+  },
 ];

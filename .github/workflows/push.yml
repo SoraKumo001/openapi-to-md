@@ -1,67 +1,41 @@
 name: Push
-permissions: write-all
+
 on:
   push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
 jobs:
-  CleanupRuns:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: rokroskar/workflow-run-cleanup-action@master
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-  Modules:
-    name: Modules
+  test:
+    name: Test & Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
     steps:
-      - run: corepack enable pnpm
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Cache node modules
-        id: cache
-        uses: actions/cache@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-          lookup-only: true
-      - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile
-  StorybookBuild:
-    name: Build
-    needs: Modules
-    runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-    steps:
-      - run: corepack enable pnpm
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          node-version: 20
+
+      - name: Enable Corepack
+        run: corepack enable pnpm
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Test
-        run: |
-          mkdir test
-          npm run test:url
-      - name: Deploy
-        if: github.ref_name == 'master'
-        run: |
-          cd test
-          git init
-          git config --global user.name $GITHUB_ACTOR
-          git config --global user.email ${GITHUB_ACTOR}@git
-          git remote add origin https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/$GITHUB_REPOSITORY
-          git checkout -b sample
-          git add .
-          git commit -m "create sample"
-          git push -f origin sample
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit Test
+        run: npm test
