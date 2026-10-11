@@ -401,4 +401,114 @@ paths:
     const result = await convertMarkdown(mockYaml);
     expect(result).toBeDefined();
   });
+
+  describe("regressions", () => {
+    const spec = (body: string) => `
+openapi: 3.0.0
+info:
+  title: T
+  version: "1"
+${body}`;
+
+    it("should not treat path item summary as a method", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /a:
+    summary: path summary
+    description: path description
+    get:
+      responses:
+        '200':
+          description: OK
+`),
+      );
+      expect(result).not.toContain("SUMMARY");
+      expect(result).not.toContain("DESCRIPTION");
+      expect(result).toContain("| GET |");
+    });
+
+    it("should output path-level and cookie parameters", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /users/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string}}
+    get:
+      parameters:
+        - {name: session, in: cookie, schema: {type: string}}
+      responses:
+        '200':
+          description: OK
+`),
+      );
+      expect(result).toContain("Parameters(Path)");
+      expect(result).toContain("Parameters(Cookie)");
+      expect(result).toContain("session");
+    });
+
+    it("should let operation parameters override path-level ones", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /a:
+    parameters:
+      - {name: q, in: query, schema: {type: string}}
+    get:
+      parameters:
+        - {name: q, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: OK
+`),
+      );
+      expect(result!.match(/q\?: /g)).toHaveLength(1);
+      expect(result).toContain("q?: integer");
+    });
+
+    it("should resolve $ref responses", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /a:
+    get:
+      responses:
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  responses:
+    NotFound:
+      description: not found here
+`),
+      );
+      expect(result).toContain("- 404 not found here");
+      expect(result).not.toContain("undefined");
+    });
+
+    it("should not print undefined for top-level oneOf", async () => {
+      const result = await convertMarkdown(
+        spec(`paths: {}
+components:
+  schemas:
+    U:
+      oneOf:
+        - type: string
+        - type: integer
+`),
+      );
+      expect(result).toContain("string | integer");
+      expect(result).not.toContain("undefined");
+    });
+
+    it("should escape pipes in table cells", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /a:
+    get:
+      summary: "a | b"
+      responses:
+        '200':
+          description: OK
+`),
+      );
+      expect(result).toContain("a \\| b |");
+    });
+  });
 });

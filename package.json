@@ -10,11 +10,15 @@
     "lint:fix": "eslint --fix src",
     "lint": "eslint src",
     "test": "vitest --coverage",
+    "example": "tsx src/openapi-to-md.ts examples/petstore.yaml examples/petstore.md",
     "test:manual": "tsx src/openapi-to-md.ts test/tmp/api.github.com.yaml test/tmp/README.md",
     "test:sort": "tsx src/openapi-to-md.ts -s test/tmp/api.github.com.yaml test/tmp/README.md",
     "test:url": "tsx src/openapi-to-md.ts -s https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.yaml test/tmp/README.md"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "@eslint/js": "9.39.2",
     "@types/node": "^25.0.10",

@@ -3,3 +3,4 @@
 /test/coverage
 /test/tmp
 tsconfig.tsbuildinfo
+.omc

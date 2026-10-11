@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { EventEmitter } from "events";
 import { promises as fs } from "fs";
-import https from "https";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getData } from "../src/libs/getData";
 
@@ -12,16 +10,10 @@ vi.mock("fs", () => ({
   },
 }));
 
-// Mock https
-vi.mock("https", () => ({
-  default: {
-    get: vi.fn(),
-  },
-}));
-
 describe("getData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("should read data from file when given a file path", async () => {
@@ -47,41 +39,40 @@ describe("getData", () => {
 
   it("should fetch data from URL when given a valid URL", async () => {
     const mockUrl = "https://example.com/data";
-    const mockResponseData = "url content";
-
-    const mockReq = new EventEmitter();
-
-    (https.get as any).mockImplementation(
-      (url: string, callback: (res: any) => void) => {
-        const response = new EventEmitter();
-
-        process.nextTick(() => {
-          callback(response);
-          response.emit("data", mockResponseData);
-          response.emit("end");
-        });
-
-        return mockReq;
-      },
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, text: async () => "url content" });
+    vi.stubGlobal("fetch", fetchMock);
 
     const result = await getData(mockUrl);
 
-    expect(https.get).toHaveBeenCalledWith(mockUrl, expect.any(Function));
-    expect(result).toBe(mockResponseData);
+    expect(fetchMock).toHaveBeenCalledWith(mockUrl);
+    expect(result).toBe("url content");
   });
 
-  it("should reject null when https request fails", async () => {
-    const mockUrl = "https://example.com/error";
+  it("should return null when the HTTP status is not ok", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, text: async () => "Not Found" }),
+    );
 
-    (https.get as any).mockImplementation((url: string, callback: any) => {
-      const req = new EventEmitter();
-      process.nextTick(() => {
-        req.emit("error", new Error("Network error"));
-      });
-      return req;
-    });
+    expect(await getData("https://example.com/missing")).toBeNull();
+  });
 
-    await expect(getData(mockUrl)).rejects.toBeNull();
+  it("should return null when the request fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")));
+
+    expect(await getData("https://example.com/error")).toBeNull();
+  });
+
+  it("should treat a Windows absolute path as a file, not a URL", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    (fs.readFile as any).mockResolvedValue("content");
+
+    const result = await getData("C:\work\api.yaml");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result).toBe("content");
   });
 });

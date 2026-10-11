@@ -157,6 +157,12 @@ const getTypeString = (
   }
   return "";
 };
+const outputNamePrefix = (
+  name: string | undefined,
+  required: boolean | undefined,
+  level: number,
+) =>
+  name ? SP(level) + `${name}${required === true ? "" : "?"}: ` : SP(level);
 const outputObject = (
   apiDocument: ApiDocument,
   name: string | undefined,
@@ -230,7 +236,7 @@ const outputObject = (
     output += "\n";
   } else if (apiObject.anyOf) {
     output += outputComment(schemas, apiObject, nowLevel);
-    output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
+    output += outputNamePrefix(name, required, nowLevel);
     apiObject.anyOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
       output += (index ? " & " : "") + `Partial(${typeName})`;
@@ -238,7 +244,7 @@ const outputObject = (
     output += "\n";
   } else if (apiObject.allOf) {
     output += outputComment(schemas, apiObject, nowLevel);
-    output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
+    output += outputNamePrefix(name, required, nowLevel);
     apiObject.allOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
       output += (index ? " & " : "") + `${typeName}`;
@@ -246,7 +252,7 @@ const outputObject = (
     output += "\n";
   } else if (apiObject.oneOf) {
     output += outputComment(schemas, apiObject, nowLevel);
-    output += SP(nowLevel) + `${name}${required === true ? "" : "?"}: `;
+    output += outputNamePrefix(name, required, nowLevel);
     apiObject.oneOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
       output += (index ? " | " : "") + `${typeName}`;
@@ -271,18 +277,21 @@ const outputParameters = (
       ? [...p[apiParam.in], apiParam]
       : [apiParam];
   }
+  const sections: [string, string][] = [
+    ["path", "#### Parameters(Path)"],
+    ["query", "#### Parameters(Query)"],
+    ["body", "#### Parameters(Body)"],
+    ["header", "#### Headers"],
+    ["cookie", "#### Parameters(Cookie)"],
+  ];
   let output = "";
-  if (p["query"]) {
-    output +=
-      "#### Parameters(Query)\n\n" +
-      outputParamSchemas(apiDocument, p["query"]);
-  }
-  if (p["body"]) {
-    output +=
-      "#### Parameters(Body)\n\n" + outputParamSchemas(apiDocument, p["body"]);
-  }
-  if (p["header"]) {
-    output += "#### Headers\n\n" + outputParamSchemas(apiDocument, p["header"]);
+  for (const [key, title] of sections) {
+    if (p[key]) {
+      output +=
+        `${title}
+
+` + outputParamSchemas(apiDocument, p[key]);
+    }
   }
   return output;
 };
@@ -343,8 +352,12 @@ const outputResponses = (
   let output = "#### Responses\n\n";
 
   for (const [code, res] of Object.entries(responsesObject)) {
-    const response = res as OpenAPIV3.ResponseObject;
-    output += `- ${code} ${response.description}\n\n`;
+    const response = getApiObject<OpenAPIV3.ResponseObject | undefined>(
+      apiDocument,
+      res,
+    );
+    if (!response) continue;
+    output += `- ${code} ${response.description ?? ""}\n\n`;
 
     if (response.content)
       for (const [contentName, content] of Object.entries(response.content)) {

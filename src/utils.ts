@@ -19,15 +19,26 @@ export const readDocument = <T>(src: string): T | null => {
 };
 
 /**
- * Replaces newlines with two spaces and a newline character, as required by
- * Markdown for a line break.
+ * Formats text so that it stays inside a Markdown list item: line breaks
+ * become hard breaks (two trailing spaces), blank lines remain paragraph
+ * breaks, and every non-blank line is indented.
  */
-export const markdownText = (text: string) => text.replace(/\n/g, "  \n");
+export const markdownText = (text: string) => {
+  const lines = text.trimEnd().split(/\r?\n/);
+  return lines
+    .map((line, i) => {
+      if (!line.trim()) return "";
+      const hardBreak = lines[i + 1]?.trim() ? "  " : "";
+      return "  " + line + hardBreak;
+    })
+    .join("\n");
+};
 
 /**
- * Replaces newlines with <br> for use in Markdown tables.
+ * Escapes pipes and replaces newlines with <br> for use in Markdown tables.
  */
-export const tableText = (text: string) => text.replace(/\n/g, "<br>");
+export const tableText = (text: string) =>
+  text.trimEnd().replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
 
 /**
  * Converts a path to a format that can be used in a URL, such as replacing

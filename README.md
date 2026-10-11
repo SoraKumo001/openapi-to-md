@@ -109,6 +109,16 @@ The generated Markdown includes:
 4.  **Path Details**: Detailed information for each endpoint, including parameters, request bodies, and responses.
 5.  **References**: Detailed schema definitions in a TypeScript-like format.
 
+## Example
+
+See [`examples/petstore.md`](examples/petstore.md), generated from the
+[Petstore](https://learn.openapis.org/examples/v3.0/petstore.html) sample
+([`examples/petstore.yaml`](examples/petstore.yaml)).
+
+```sh
+npm run example
+```
+
 ## License
 
 MIT

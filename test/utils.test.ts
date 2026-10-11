@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { convertPath, markdownText, readDocument, tableText } from "../src/utils";
+import {
+  convertPath,
+  markdownText,
+  readDocument,
+  tableText,
+} from "../src/utils";
 
 describe("utils", () => {
   describe("readDocument", () => {
@@ -29,7 +34,13 @@ describe("utils", () => {
   describe("markdownText", () => {
     it("should replace newlines with two spaces and a newline", () => {
       const text = "line1\nline2";
-      expect(markdownText(text)).toBe("line1  \nline2");
+      expect(markdownText(text)).toBe("  line1  \n  line2");
+    });
+  });
+
+  describe("markdownText paragraphs", () => {
+    it("should keep paragraphs inside the list item", () => {
+      expect(markdownText("a\n\nb\nc\n")).toBe("  a\n\n  b  \n  c");
     });
   });
 
@@ -37,6 +48,14 @@ describe("utils", () => {
     it("should replace newlines with <br>", () => {
       const text = "line1\nline2";
       expect(tableText(text)).toBe("line1<br>line2");
+    });
+
+    it("should drop trailing newlines", () => {
+      expect(tableText("a\n")).toBe("a");
+    });
+
+    it("should escape pipes", () => {
+      expect(tableText("a | b")).toBe("a \\| b");
     });
   });
 
