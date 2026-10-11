@@ -34,7 +34,8 @@
 #### Parameters(Query)
 
 ```typescript
-limit?: integer
+// How many items to return at one time (max 100)
+limit?: integer //format: int32
 ```
 
 #### Responses
@@ -45,7 +46,7 @@ limit?: integer
 
 ```typescript
 {
-  id: integer
+  id: integer //format: int64
   name: string
   tag?: string
 }[]
@@ -57,7 +58,7 @@ limit?: integer
 
 ```typescript
 {
-  code: integer
+  code: integer //format: int32
   message: string
 }
 ```
@@ -78,7 +79,7 @@ limit?: integer
 
 ```typescript
 {
-  id: integer
+  id: integer //format: int64
   name: string
   tag?: string
 }
@@ -94,7 +95,7 @@ limit?: integer
 
 ```typescript
 {
-  code: integer
+  code: integer //format: int32
   message: string
 }
 ```
@@ -112,6 +113,7 @@ limit?: integer
 #### Parameters(Path)
 
 ```typescript
+// The id of the pet to retrieve
 petId: string
 ```
 
@@ -123,7 +125,7 @@ petId: string
 
 ```typescript
 {
-  id: integer
+  id: integer //format: int64
   name: string
   tag?: string
 }
@@ -135,7 +137,7 @@ petId: string
 
 ```typescript
 {
-  code: integer
+  code: integer //format: int32
   message: string
 }
 ```
@@ -146,7 +148,7 @@ petId: string
 
 ```typescript
 {
-  id: integer
+  id: integer //format: int64
   name: string
   tag?: string
 }
@@ -156,7 +158,7 @@ petId: string
 
 ```typescript
 {
-  id: integer
+  id: integer //format: int64
   name: string
   tag?: string
 }[]
@@ -166,7 +168,7 @@ petId: string
 
 ```typescript
 {
-  code: integer
+  code: integer //format: int32
   message: string
 }
 ```

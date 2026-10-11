@@ -497,6 +497,102 @@ components:
       expect(result).not.toContain("undefined");
     });
 
+    it("should output parameter descriptions", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /a:
+    get:
+      parameters:
+        - {name: limit, in: query, description: max items, schema: {type: integer}}
+      responses:
+        '200':
+          description: OK
+`),
+      );
+      expect(result).toContain("// max items");
+    });
+
+    it("should mark required arrays and keep falsy defaults", async () => {
+      const result = await convertMarkdown(
+        spec(`paths: {}
+components:
+  schemas:
+    V:
+      type: object
+      required: [tags, n, flag]
+      properties:
+        tags: {type: array, items: {type: string}}
+        n: {type: integer, default: 0}
+        flag: {type: boolean, default: false}
+        opt: {type: array, items: {type: string}}
+`),
+      );
+      expect(result).toContain("  tags: string[]");
+      expect(result).toContain("  opt?: string[]");
+      expect(result).toContain("//default: 0");
+      expect(result).toContain("//default: false");
+    });
+
+    it("should output format, nullable, and typeless schemas", async () => {
+      const result = await convertMarkdown(
+        spec(`paths:
+  /a:
+    get:
+      responses:
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  responses:
+    NotFound:
+      description: not found here
+  schemas:
+    P:
+      type: object
+      properties:
+        at: {type: string, format: date-time}
+        name: {type: string, nullable: true}
+        loose: {}
+    Q:
+      properties:
+        x: {type: integer}
+`),
+      );
+      expect(result).toContain("at?: string //format: date-time");
+      expect(result).toContain("name?: string | null");
+      expect(result).toContain("loose?: any");
+      expect(result).toMatch(
+        /### #\/components\/schemas\/Q\n\n```typescript\n\{\n {2}x\?: integer/,
+      );
+      expect(result).toContain(
+        "### #/components/responses/NotFound\n\nnot found here",
+      );
+    });
+
+    it("should expand a repeated $ref but collapse real cycles", async () => {
+      const result = await convertMarkdown(
+        spec(`paths: {}
+components:
+  schemas:
+    Id:
+      type: object
+      properties:
+        v: {type: string}
+    Pair:
+      type: object
+      properties:
+        a: {$ref: '#/components/schemas/Id'}
+        b: {$ref: '#/components/schemas/Id'}
+    Node:
+      type: object
+      properties:
+        next: {$ref: '#/components/schemas/Node'}
+`),
+      );
+      const pair = result!.split("### #/components/schemas/Pair")[1];
+      expect(pair.match(/v\?: string/g)).toHaveLength(2);
+      expect(result).toContain("next:#/components/schemas/Node");
+    });
+
     it("should escape pipes in table cells", async () => {
       const result = await convertMarkdown(
         spec(`paths:

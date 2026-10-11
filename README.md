@@ -97,7 +97,7 @@ console.log(markdown);
 | `sort` | `boolean` | (Optional) If `true`, sorts paths and references alphabetically. Default is `false`. |
 
 **Returns:**
-A `Promise` that resolves to the generated Markdown string. Returns `undefined` if the input cannot be parsed or an error occurs.
+A `Promise` that resolves to the generated Markdown string. Returns `undefined` if the input cannot be parsed as YAML or JSON. Other failures (for example, an OpenAPI v2 document that cannot be converted) reject the promise.
 
 ## Output Structure
 

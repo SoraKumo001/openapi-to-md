@@ -89,10 +89,11 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
       output += outputSchemas(apiDocument, value.schema);
     });
   } else {
-    output += "```typescript\n";
+    let body = "";
     if ("schema" in apiObject) {
-      output += outputRefComment(schemas, 0);
-      output += outputObject(
+      body += outputRefComment(schemas, 0);
+      body += outputComment(null, { description: apiObject.description }, 0);
+      body += outputObject(
         apiDocument,
         apiObject.name,
         apiObject.schema!,
@@ -101,11 +102,15 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
           : apiObject.required,
       );
     } else if ("in" in apiObject) {
-      output += JSON.stringify(apiObject, undefined, "  ") + "\n";
+      body += JSON.stringify(apiObject, undefined, "  ") + "\n";
     } else {
-      output += outputObject(apiDocument, undefined, apiObject);
+      body += outputObject(apiDocument, undefined, apiObject);
     }
-    output += "```\n\n";
+    if (body) {
+      output += "```typescript\n" + body + "```\n\n";
+    } else if ("description" in apiObject && apiObject.description) {
+      output += apiObject.description.trimEnd() + "\n\n";
+    }
   }
   return output;
 };
@@ -163,16 +168,37 @@ const outputNamePrefix = (
   level: number,
 ) =>
   name ? SP(level) + `${name}${required === true ? "" : "?"}: ` : SP(level);
+/**
+ * Outputs a schema. `refs` holds the `$ref`s currently being expanded, so only
+ * real circular references are collapsed; the same `$ref` used by sibling
+ * properties is expanded each time.
+ */
 const outputObject = (
   apiDocument: ApiDocument,
   name: string | undefined,
   schemas: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
   required?: boolean,
-  refs?: Set<string>,
+  refs: Set<string> = new Set(),
+  level?: number,
+): string => {
+  const refName = getRefName(schemas);
+  const isNewRef = refName !== undefined && !refs.has(refName);
+  try {
+    return outputObjectBody(apiDocument, name, schemas, required, refs, level);
+  } finally {
+    if (isNewRef) refs.delete(refName);
+  }
+};
+const outputObjectBody = (
+  apiDocument: ApiDocument,
+  name: string | undefined,
+  schemas: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject,
+  required: boolean | undefined,
+  refs: Set<string>,
   level?: number,
 ) => {
   const nowLevel = level || 0;
-  const setRef = refs || new Set();
+  const setRef = refs;
   const apiObject = getApiObject<OpenAPIV3.SchemaObject>(
     apiDocument,
     schemas,
@@ -182,8 +208,12 @@ const outputObject = (
 
   let output = "";
   if ("$ref" in apiObject) {
-    output += SP(nowLevel) + `${name}:${apiObject["$ref"]}\n`;
-  } else if (apiObject.type === "object") {
+    output +=
+      SP(nowLevel) + (name ? `${name}:` : "") + apiObject["$ref"] + "\n";
+  } else if (
+    apiObject.type === "object" ||
+    (!apiObject.type && apiObject.properties)
+  ) {
     output += outputComment(schemas, apiObject, nowLevel);
     output += name ? SP(nowLevel) + `${name}: {\n` : "{\n";
     if (apiObject.properties) {
@@ -208,30 +238,38 @@ const outputObject = (
         apiDocument,
         name,
         apiObject.items,
-        undefined,
+        required,
         setRef,
         nowLevel,
       ).trimEnd() + "[]\n";
   } else if (apiObject.type) {
     output += outputComment(schemas, apiObject, nowLevel);
     const type: string[] = Array.isArray(apiObject.type)
-      ? apiObject.type
+      ? apiObject.type.map(String)
       : apiObject.type
         ? [apiObject.type]
         : [];
+    if (apiObject.nullable && !type.includes("null")) {
+      type.push("null");
+    }
     output += name
       ? SP(nowLevel) + `${name}${required === true ? "" : "?"}: `
       : "";
     if (apiObject.enum) {
-      output += `enum[${apiObject.enum.join(", ")}]`;
+      const nullable = type.includes("null") ? " | null" : "";
+      output += `enum[${apiObject.enum.join(", ")}]${nullable}`;
     } else {
-      output += `${type.reduce(
-        (a, b, index) => a + (index ? " | " : "") + b,
-        "",
-      )}`;
+      output += type.join(" | ");
     }
-    if (apiObject.default) {
-      output += ` //default: ${apiObject.default}`;
+    if (apiObject.format) {
+      output += ` //format: ${apiObject.format}`;
+    }
+    if (apiObject.default !== undefined) {
+      const value =
+        typeof apiObject.default === "object"
+          ? JSON.stringify(apiObject.default)
+          : apiObject.default;
+      output += ` //default: ${value}`;
     }
     output += "\n";
   } else if (apiObject.anyOf) {
@@ -258,6 +296,9 @@ const outputObject = (
       output += (index ? " | " : "") + `${typeName}`;
     });
     output += "\n";
+  } else if (name) {
+    output += outputComment(schemas, apiObject, nowLevel);
+    output += outputNamePrefix(name, required, nowLevel) + "any\n";
   }
   return output;
 };
@@ -340,6 +381,13 @@ const outputExamples = (
   return output;
 };
 
+const outputExample = (example: unknown) =>
+  example === undefined
+    ? ""
+    : "- Example\n\n```json\n" +
+      JSON.stringify(example, undefined, "  ") +
+      "\n```\n\n";
+
 const outputResponses = (
   apiDocument: ApiDocument,
   responses: OpenAPIV3.ResponsesObject | undefined,
@@ -363,6 +411,7 @@ const outputResponses = (
       for (const [contentName, content] of Object.entries(response.content)) {
         output += `\`${contentName}\`\n\n`;
         output += outputSchemas(apiDocument, content.schema);
+        output += outputExample(content.example);
         output += outputExamples(apiDocument, content.examples);
       }
   }
@@ -387,11 +436,10 @@ export const outputPathDetail = (apiDocument: ApiDocument) => {
         : "") +
       (operation.security
         ? `- Security  \n${markdownText(
-            operation.security.reduce(
-              (a, b) => a + Object.keys(b)[0] + "\n",
-              "",
-            ),
-          )}\n`
+            operation.security
+              .map((b) => Object.keys(b).join(" + ") || "None")
+              .join("\n"),
+          )}\n\n`
         : "") +
       (operation.parameters
         ? outputParameters(apiDocument, operation.parameters)
