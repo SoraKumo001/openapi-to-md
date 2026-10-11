@@ -1,0 +1,81 @@
+name: Release
+
+# Publishes to npm (OIDC / Trusted Publishing) and tags v<version> when the
+# version in package.json has not been released yet.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    uses: ./.github/workflows/push.yml
+
+  publish:
+    name: Publish & Tag
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # OIDC (npm Trusted Publishing): no NPM_TOKEN is needed.
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Trusted Publishing requires npm >= 11.5.1 (bundled with Node 24)
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Read package.json
+        id: pkg
+        run: |
+          echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Check published version
+        id: check
+        env:
+          PACKAGE: ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}
+        run: |
+          if npm view "$PACKAGE" version > /dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$PACKAGE is already published"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Enable Corepack
+        if: steps.check.outputs.published == 'false'
+        run: corepack enable pnpm
+
+      - name: Install dependencies
+        if: steps.check.outputs.published == 'false'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: steps.check.outputs.published == 'false'
+        run: npm run build
+
+      - name: Publish
+        if: steps.check.outputs.published == 'false'
+        run: npm publish --provenance --access public
+
+      - name: Create tag
+        env:
+          TAG: v${{ steps.pkg.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi

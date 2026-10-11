@@ -2,13 +2,15 @@ name: Push
 
 on:
   push:
+    branches-ignore: [master]
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test:
