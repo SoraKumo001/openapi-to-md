@@ -8,11 +8,50 @@ import {
   tableText,
 } from "./utils";
 
+const outputInfoExtras = (document: ApiDocument["document"]) => {
+  const { info, servers, externalDocs } = document;
+  const items: string[] = [];
+  if (info.license) {
+    items.push(
+      `- License: ${
+        info.license.url
+          ? `[${info.license.name}](${info.license.url})`
+          : info.license.name
+      }`,
+    );
+  }
+  if (info.contact) {
+    const { name, email, url } = info.contact;
+    const contact = [name, email && `<${email}>`, url].filter(Boolean);
+    if (contact.length) items.push(`- Contact: ${contact.join(" ")}`);
+  }
+  if (info.termsOfService) {
+    items.push(`- Terms of service: ${info.termsOfService}`);
+  }
+  if (externalDocs) {
+    items.push(
+      `- External docs: ${externalDocs.url}${
+        externalDocs.description
+          ? ` (${tableText(externalDocs.description)})`
+          : ""
+      }`,
+    );
+  }
+  for (const server of servers ?? []) {
+    items.push(
+      `- Server: ${server.url}${
+        server.description ? ` (${tableText(server.description)})` : ""
+      }`,
+    );
+  }
+  return items.length ? "\n" + items.join("\n") + "\n" : "";
+};
+
 export const outputPathTable = ({ document, pathMethods }: ApiDocument) => {
   let output = `# ${document.info.title || "Api-Document"}\n\n> Version ${
     document.info.version || "1.0.0"
   }
-${document.info.description ? "\n" + document.info.description + "\n" : ""}
+${document.info.description ? "\n" + document.info.description + "\n" : ""}${outputInfoExtras(document)}
 
 ## Path Table
 
@@ -25,7 +64,9 @@ ${document.info.description ? "\n" + document.info.description + "\n" : ""}
       a +
       `| ${method.toUpperCase()} | [${path}](#${method.toLowerCase()}${convertPath(
         path,
-      )}) | ${operation.summary ? tableText(operation.summary) : ""} |
+      )}) | ${operation.deprecated ? "**deprecated** " : ""}${
+        operation.summary ? tableText(operation.summary) : ""
+      } |
 `,
     "",
   );
@@ -87,6 +128,8 @@ const outputSchemas = (apiDocument: ApiDocument, schemas: unknown): string => {
     Object.entries(apiObject.content!).forEach(([key, value]) => {
       output += `- ${key}\n\n`;
       output += outputSchemas(apiDocument, value.schema);
+      output += outputExample(value.example);
+      output += outputExamples(apiDocument, value.examples);
     });
   } else {
     let body = "";
@@ -162,6 +205,31 @@ const getTypeString = (
   }
   return "";
 };
+const CONSTRAINT_KEYS = [
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "multipleOf",
+  "minLength",
+  "maxLength",
+  "pattern",
+  "minItems",
+  "maxItems",
+  "uniqueItems",
+] as const;
+const outputConstraints = (apiObject: OpenAPIV3.SchemaObject) =>
+  CONSTRAINT_KEYS.reduce((a, key) => {
+    const value = apiObject[key];
+    return value === undefined ? a : a + ` //${key}: ${value}`;
+  }, "");
+const outputDiscriminator = (
+  apiObject: OpenAPIV3.SchemaObject,
+  level: number,
+) =>
+  apiObject.discriminator
+    ? SP(level) + `// discriminator: ${apiObject.discriminator.propertyName}\n`
+    : "";
 const outputNamePrefix = (
   name: string | undefined,
   required: boolean | undefined,
@@ -212,7 +280,8 @@ const outputObjectBody = (
       SP(nowLevel) + (name ? `${name}:` : "") + apiObject["$ref"] + "\n";
   } else if (
     apiObject.type === "object" ||
-    (!apiObject.type && apiObject.properties)
+    (!apiObject.type &&
+      (apiObject.properties || apiObject.additionalProperties))
   ) {
     output += outputComment(schemas, apiObject, nowLevel);
     output += name ? SP(nowLevel) + `${name}: {\n` : "{\n";
@@ -230,6 +299,22 @@ const outputObjectBody = (
         );
       });
     }
+    const additional = apiObject.additionalProperties;
+    if (
+      additional === true ||
+      (additional && !Object.keys(additional).length)
+    ) {
+      output += SP(nowLevel + 1) + "[key: string]: any\n";
+    } else if (additional) {
+      output += outputObject(
+        apiDocument,
+        "[key: string]",
+        additional,
+        true,
+        setRef,
+        nowLevel + 1,
+      );
+    }
     output += SP(nowLevel) + "}\n";
   } else if (apiObject.type === "array") {
     output += outputRefComment(schemas, nowLevel);
@@ -241,7 +326,10 @@ const outputObjectBody = (
         required,
         setRef,
         nowLevel,
-      ).trimEnd() + "[]\n";
+      ).trimEnd() +
+      "[]" +
+      outputConstraints(apiObject) +
+      "\n";
   } else if (apiObject.type) {
     output += outputComment(schemas, apiObject, nowLevel);
     const type: string[] = Array.isArray(apiObject.type)
@@ -264,6 +352,7 @@ const outputObjectBody = (
     if (apiObject.format) {
       output += ` //format: ${apiObject.format}`;
     }
+    output += outputConstraints(apiObject);
     if (apiObject.default !== undefined) {
       const value =
         typeof apiObject.default === "object"
@@ -272,8 +361,13 @@ const outputObjectBody = (
       output += ` //default: ${value}`;
     }
     output += "\n";
+  } else if (apiObject.not) {
+    output += outputComment(schemas, apiObject, nowLevel);
+    output += outputNamePrefix(name, required, nowLevel);
+    output += `not(${getTypeString(apiDocument, apiObject.not, setRef, nowLevel)})\n`;
   } else if (apiObject.anyOf) {
     output += outputComment(schemas, apiObject, nowLevel);
+    output += outputDiscriminator(apiObject, nowLevel);
     output += outputNamePrefix(name, required, nowLevel);
     apiObject.anyOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
@@ -282,6 +376,7 @@ const outputObjectBody = (
     output += "\n";
   } else if (apiObject.allOf) {
     output += outputComment(schemas, apiObject, nowLevel);
+    output += outputDiscriminator(apiObject, nowLevel);
     output += outputNamePrefix(name, required, nowLevel);
     apiObject.allOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
@@ -290,6 +385,7 @@ const outputObjectBody = (
     output += "\n";
   } else if (apiObject.oneOf) {
     output += outputComment(schemas, apiObject, nowLevel);
+    output += outputDiscriminator(apiObject, nowLevel);
     output += outputNamePrefix(name, required, nowLevel);
     apiObject.oneOf.forEach((obj, index) => {
       const typeName = getTypeString(apiDocument, obj, setRef, nowLevel);
@@ -337,13 +433,99 @@ const outputParameters = (
   return output;
 };
 
+const outputSecurityScheme = (scheme: OpenAPIV3.SecuritySchemeObject) => {
+  const items: [string, unknown][] = [["Type", scheme.type]];
+  if (scheme.type === "http") {
+    items.push(
+      ["Scheme", scheme.scheme],
+      ["Bearer format", scheme.bearerFormat],
+    );
+  } else if (scheme.type === "apiKey") {
+    items.push(["In", scheme.in], ["Name", scheme.name]);
+  } else if (scheme.type === "openIdConnect") {
+    items.push(["OpenID Connect URL", scheme.openIdConnectUrl]);
+  }
+  let output = "";
+  for (const [label, value] of items) {
+    if (value) output += `- ${label}: ${value}\n`;
+  }
+  if (scheme.type === "oauth2") {
+    for (const [flowName, flow] of Object.entries(scheme.flows ?? {})) {
+      const f = flow as OpenAPIV3.OAuth2SecurityScheme["flows"][
+        | "implicit"
+        | "password"
+        | "clientCredentials"
+        | "authorizationCode"] & {
+        authorizationUrl?: string;
+        tokenUrl?: string;
+        refreshUrl?: string;
+      };
+      output += `- Flow: ${flowName}\n`;
+      if (f.authorizationUrl) {
+        output += `  - Authorization URL: ${f.authorizationUrl}\n`;
+      }
+      if (f.tokenUrl) output += `  - Token URL: ${f.tokenUrl}\n`;
+      if (f.refreshUrl) output += `  - Refresh URL: ${f.refreshUrl}\n`;
+      for (const [scope, description] of Object.entries(f.scopes ?? {})) {
+        output += `  - Scope \`${scope}\`: ${tableText(String(description))}\n`;
+      }
+    }
+  }
+  output += "\n";
+  if (scheme.description) output += scheme.description.trimEnd() + "\n\n";
+  return output;
+};
+
+const SECURITY_SCHEMES_PREFIX = "#/components/securitySchemes/";
+
 export const outputReferences = (apiDocument: ApiDocument) => {
   let output = "## References\n\n";
   Object.entries(apiDocument.references).forEach(([key, value]) => {
     output += `### ${key}\n\n`;
-    output += outputSchemas(apiDocument, value);
+    const scheme = getApiObject<OpenAPIV3.SecuritySchemeObject | undefined>(
+      apiDocument,
+      value,
+    );
+    output +=
+      key.startsWith(SECURITY_SCHEMES_PREFIX) && scheme?.type
+        ? outputSecurityScheme(scheme)
+        : outputSchemas(apiDocument, value);
   });
   return output;
+};
+
+const outputHeaders = (
+  apiDocument: ApiDocument,
+  headers: OpenAPIV3.ResponseObject["headers"],
+) => {
+  if (!headers) return "";
+  let body = "";
+  for (const [name, header] of Object.entries(headers)) {
+    const h = getApiObject<OpenAPIV3.HeaderObject | undefined>(
+      apiDocument,
+      header,
+    );
+    if (!h) continue;
+    body += outputComment(null, { description: h.description }, 0);
+    body += outputObject(apiDocument, name, h.schema ?? {}, h.required);
+  }
+  return body ? "`Headers`\n\n```typescript\n" + body + "```\n\n" : "";
+};
+
+const outputLinks = (
+  apiDocument: ApiDocument,
+  links: OpenAPIV3.ResponseObject["links"],
+) => {
+  if (!links) return "";
+  let output = "";
+  for (const [name, link] of Object.entries(links)) {
+    const l = getApiObject<OpenAPIV3.LinkObject | undefined>(apiDocument, link);
+    if (!l) continue;
+    const target = l.operationId ?? l.operationRef ?? "";
+    const description = l.description ? ` - ${tableText(l.description)}` : "";
+    output += `- ${name}${target ? `: ${target}` : ""}${description}\n`;
+  }
+  return output ? "`Links`\n\n" + output + "\n" : "";
 };
 
 const outputRequestBody = (
@@ -358,6 +540,8 @@ const outputRequestBody = (
     requestBody,
   );
   let output = "#### RequestBody\n\n";
+  if (body?.required) output += "*Required*\n\n";
+  if (body?.description) output += body.description.trimEnd() + "\n\n";
   output += outputSchemas(apiDocument, body);
   return output;
 };
@@ -414,6 +598,8 @@ const outputResponses = (
         output += outputExample(content.example);
         output += outputExamples(apiDocument, content.examples);
       }
+    output += outputHeaders(apiDocument, response.headers);
+    output += outputLinks(apiDocument, response.links);
   }
   return output;
 };
@@ -433,6 +619,17 @@ export const outputPathDetail = (apiDocument: ApiDocument) => {
         : "") +
       (operation.description
         ? `- Description  \n${markdownText(operation.description)}\n\n`
+        : "") +
+      (operation.tags?.length
+        ? `- Tags  \n  ${operation.tags.map((t) => tableText(t)).join(", ")}\n\n`
+        : "") +
+      (operation.deprecated ? `- Deprecated  \n  true\n\n` : "") +
+      (operation.externalDocs
+        ? `- External docs  \n  ${operation.externalDocs.url}${
+            operation.externalDocs.description
+              ? ` (${tableText(operation.externalDocs.description)})`
+              : ""
+          }\n\n`
         : "") +
       (operation.security
         ? `- Security  \n${markdownText(

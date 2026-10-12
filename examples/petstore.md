@@ -2,6 +2,9 @@
 
 > Version 1.0.0
 
+- License: MIT
+- Server: http://petstore.swagger.io/v1
+
 
 ## Path Table
 
@@ -31,11 +34,14 @@
 - Operation id  
   listPets
 
+- Tags  
+  pets
+
 #### Parameters(Query)
 
 ```typescript
 // How many items to return at one time (max 100)
-limit?: integer //format: int32
+limit?: integer //format: int32 //maximum: 100
 ```
 
 #### Responses
@@ -49,7 +55,14 @@ limit?: integer //format: int32
   id: integer //format: int64
   name: string
   tag?: string
-}[]
+}[] //maxItems: 100
+```
+
+`Headers`
+
+```typescript
+// A link to the next page of responses
+x-next?: string
 ```
 
 - default unexpected error
@@ -73,7 +86,12 @@ limit?: integer //format: int32
 - Operation id  
   createPets
 
+- Tags  
+  pets
+
 #### RequestBody
+
+*Required*
 
 - application/json
 
@@ -109,6 +127,9 @@ limit?: integer //format: int32
 
 - Operation id  
   showPetById
+
+- Tags  
+  pets
 
 #### Parameters(Path)
 
@@ -161,7 +182,7 @@ petId: string
   id: integer //format: int64
   name: string
   tag?: string
-}[]
+}[] //maxItems: 100
 ```
 
 ### #/components/schemas/Error

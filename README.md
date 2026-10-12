@@ -15,10 +15,16 @@ Convert OpenAPI (Swagger) specifications into readable Markdown documentation.
 
 - **Multi-version Support**: Supports both OpenAPI v2 (Swagger) and v3 formats.
 - **Flexible Input**: Accepts both JSON and YAML files.
-- **Remote Fetching**: Can convert files directly from a URL.
-- **TypeScript-style Output**: Generates data structures resembling TypeScript interfaces.
+- **Remote Fetching**: Can convert files directly from an `http(s)` URL.
+- **TypeScript-style Output**: Generates data structures resembling TypeScript interfaces, including `format`, `nullable`, constraints, map types (`additionalProperties`), `oneOf` / `anyOf` / `allOf` / `not` and `discriminator`.
+- **Complete Operation Details**: Path-level and operation-level parameters (path, query, header, cookie), request bodies, responses (including `$ref`, headers, links and examples), tags, deprecation, external docs and security requirements.
+- **Document Metadata**: Info (license, contact, terms of service), servers and security schemes (API key, HTTP, OAuth2 flows, OpenID Connect).
 - **Sorting**: Optional alphabetical sorting of paths and references.
-- **Safe Handling**: Does not deeply resolve recursive references to prevent infinite loops.
+- **Safe Handling**: Circular references are detected and collapsed to prevent infinite loops.
+
+## Requirements
+
+Node.js 18 or later.
 
 ## CLI Usage
 
@@ -103,11 +109,34 @@ A `Promise` that resolves to the generated Markdown string. Returns `undefined` 
 
 The generated Markdown includes:
 
-1.  **Header**: Title, Version, and Description from the OpenAPI info object.
-2.  **Path Table**: A summary table of all API endpoints (Method, Path, Summary).
-3.  **Reference Table**: A summary table of all schemas in `components` or `definitions`.
-4.  **Path Details**: Detailed information for each endpoint, including parameters, request bodies, and responses.
-5.  **References**: Detailed schema definitions in a TypeScript-like format.
+1.  **Header**: Title, Version, and Description from the OpenAPI info object, followed by license, contact, terms of service, external docs and servers when present.
+2.  **Path Table**: A summary table of all API endpoints (Method, Path, Summary). Deprecated operations are marked with **deprecated**.
+3.  **Reference Table**: A summary table of everything in `components` (or `definitions`): schemas, parameters, responses, request bodies, security schemes, and so on.
+4.  **Path Details**: Detailed information for each endpoint: summary, operation id, description, tags, deprecation, external docs, security, parameters (`Path` / `Query` / `Header` / `Cookie`), request body, and responses.
+5.  **References**: Detailed definitions of each component. Schemas are written in a TypeScript-like format; security schemes are written as a list.
+
+### Notation
+
+Schemas are rendered in a TypeScript-like notation with trailing comments for details.
+
+| Notation | Meaning |
+| :--- | :--- |
+| `name?: string` | Optional property (properties listed in `required` have no `?`). |
+| `string \| null` | Union of types (`nullable: true` adds `null`). |
+| `//format: date-time` | The `format` of the value. |
+| `//default: 0` | The default value. |
+| `//minimum: 0`, `//maxLength: 10`, `//pattern: ^a` | Validation constraints (`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`, `minLength`, `maxLength`, `pattern`, `minItems`, `maxItems`, `uniqueItems`). |
+| `enum[A, B]` | Enumerated values. |
+| `[key: string]: T` | Map type (`additionalProperties`). |
+| `A & B` | `allOf`. |
+| `A \| B` | `oneOf`. |
+| `Partial(A) & Partial(B)` | `anyOf` (any combination of the listed schemas). |
+| `not(T)` | `not`. |
+| `any` | A property without a type. |
+| `// discriminator: kind` | The `discriminator` property of a `oneOf` / `anyOf` / `allOf`. |
+| `// #/components/schemas/Name` | The schema was referenced with `$ref`. |
+
+A `$ref` that is already being expanded (a circular reference) is not expanded again; only its reference name is written.
 
 ## Example
 
@@ -118,6 +147,21 @@ See [`examples/petstore.md`](examples/petstore.md), generated from the
 ```sh
 npm run example
 ```
+
+## Development
+
+```sh
+pnpm install
+pnpm lint      # ESLint
+pnpm build     # TypeScript -> dist/
+pnpm test      # Vitest (with coverage)
+```
+
+`test/example.test.ts` checks that `examples/petstore.md` matches the actual output. After changing the output format, run `npm run example` and commit the updated file.
+
+## Release
+
+Releases are automated by `.github/workflows/release.yml`. When a push to `master` contains a `package.json` version that has not been published yet, the workflow runs the tests, publishes the package to npm with [Trusted Publishing](https://docs.npmjs.com/trusted-publishers) (OIDC, no token), and creates the `v<version>` tag.
 
 ## License
 
