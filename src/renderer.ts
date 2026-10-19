@@ -318,18 +318,19 @@ const outputObjectBody = (
     output += SP(nowLevel) + "}\n";
   } else if (apiObject.type === "array") {
     output += outputRefComment(schemas, nowLevel);
-    output +=
-      outputObject(
-        apiDocument,
-        name,
-        apiObject.items,
-        required,
-        setRef,
-        nowLevel,
-      ).trimEnd() +
-      "[]" +
-      outputConstraints(apiObject) +
-      "\n";
+    const rendered = outputObject(
+      apiDocument,
+      name,
+      apiObject.items,
+      required,
+      setRef,
+      nowLevel,
+    ).trimEnd();
+    const commentMatch = rendered.match(/ \/\/\S+:[^\n]*$/);
+    const body = commentMatch
+      ? rendered.slice(0, commentMatch.index) + "[]" + commentMatch[0]
+      : rendered + "[]";
+    output += body + outputConstraints(apiObject) + "\n";
   } else if (apiObject.type) {
     output += outputComment(schemas, apiObject, nowLevel);
     const type: string[] = Array.isArray(apiObject.type)

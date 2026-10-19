@@ -151,4 +151,65 @@ components:
     expect(result).toContain("n?: integer //minimum: 0");
     expect(result).toContain("l?: string[] //minItems: 1");
   });
+
+  it("should place array suffix before item-constraint comments (issue #10)", async () => {
+    const result = await convertMarkdown(
+      spec(`paths: {}
+components:
+  schemas:
+    Example:
+      type: object
+      required: [tags, identifiers]
+      properties:
+        tags:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+        identifiers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        multi:
+          type: array
+          minItems: 1
+          items:
+            type: array
+            minItems: 2
+            items:
+              type: string
+              minLength: 3
+        objects:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+        withDesc:
+          type: array
+          items:
+            type: string
+            description: item desc
+            maxLength: 10
+            default: foo
+`),
+    );
+    expect(result).toContain("tags: string[] //minLength: 1 //minItems: 1");
+    expect(result).toContain("identifiers: string[] //format: uuid");
+    expect(result).toContain(
+      "multi?: string[][] //minLength: 3 //minItems: 2 //minItems: 1",
+    );
+    expect(result).toContain(
+      "  objects: {\n    id?: string //format: uuid\n  }[] //minItems: 1",
+    );
+    expect(result).toContain(
+      "  // item desc\n  withDesc?: string[] //maxLength: 10 //default: foo",
+    );
+  });
 });
+
