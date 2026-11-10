@@ -8,3 +8,4 @@ tsconfig.json
 pnpm-lock.yaml
 tsconfig.tsbuildinfo
 /examples
+.omc

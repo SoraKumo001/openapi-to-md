@@ -16,6 +16,8 @@ Convert OpenAPI (Swagger) specifications into readable Markdown documentation.
 - **Multi-version Support**: Supports both OpenAPI v2 (Swagger) and v3 formats.
 - **Flexible Input**: Accepts both JSON and YAML files.
 - **Remote Fetching**: Can convert files directly from an `http(s)` URL.
+- **HTML Output**: Export clean, standalone HTML documentation with built-in responsive styling and dark mode support, or HTML fragments for embedding.
+- **PDF Output**: Generate crisp, selectable multi-page vector PDFs using [wasm-html-to-image](https://www.npmjs.com/package/wasm-html-to-image) without requiring Chromium, Puppeteer, or OS-native dependencies.
 - **TypeScript-style Output**: Generates data structures resembling TypeScript interfaces, including `format`, `nullable`, constraints, map types (`additionalProperties`), `oneOf` / `anyOf` / `allOf` / `not` and `discriminator`.
 - **Complete Operation Details**: Path-level and operation-level parameters (path, query, header, cookie), request bodies, responses (including `$ref`, headers, links and examples), tags, deprecation, external docs and security requirements.
 - **Document Metadata**: Info (license, contact, terms of service), servers and security schemes (API key, HTTP, OAuth2 flows, OpenID Connect).
@@ -34,13 +36,27 @@ Node.js 18 or later.
 Usage: openapi-to-md [options] <source> [destination]
 
 Arguments:
-  source       Path to the local file or URL of the OpenAPI document
-  destination  (Optional) Path to save the generated Markdown file
+  source                 Path to the local file or URL of the OpenAPI document
+  destination            (Optional) Path to save the generated output file
 
 Options:
-  -V, --version  output the version number
-  -s, --sort     Sort paths and references alphabetically (default: false)
-  -h, --help     display help for command
+  -V, --version          output the version number
+  -s, --sort             Sort paths and references alphabetically (default: false)
+  -f, --format <format>  Output format: md, html, pdf (default: auto-detected from destination extension, otherwise md)
+  --html                 Output as HTML (shorthand for -f html)
+  --pdf                  Output as PDF (shorthand for -f pdf)
+  --no-standalone        Output HTML fragment without document shell
+  --theme <light|dark>   Color theme for HTML/PDF (default: light)
+  --template <name>      Document template for HTML/PDF (e.g. default, report, book, compact)
+  --page-size <size>     PDF page size (e.g. A4, Letter)
+  --toc                  Include table of contents in HTML/PDF (enabled by default for PDF)
+  --no-toc               Do not include table of contents in PDF
+  --toc-title <title>    Heading title for table of contents (default: "Contents")
+  --toc-depth <depth>    Deepest heading level in table of contents, 1-6 (default: 3)
+  --cover                Include cover page in HTML/PDF
+  --no-cover             Do not include cover page in HTML/PDF
+  --no-outline           Exclude PDF bookmarks/outline tree
+  -h, --help             display help for command
 ```
 
 ### Examples
@@ -48,6 +64,19 @@ Options:
 **Convert a local YAML file and save to README.md:**
 ```sh
 openapi-to-md openapi.yaml README.md
+```
+
+**Convert to a standalone HTML file (automatically detected by `.html` extension):**
+```sh
+openapi-to-md openapi.yaml api.html
+```
+
+**Convert to a vector PDF document (automatically detected by `.pdf` extension):**
+```sh
+openapi-to-md openapi.yaml api.pdf
+
+# Or with custom template and page size:
+openapi-to-md --template report --page-size A4 openapi.yaml api.pdf
 ```
 
 **Convert with sorting enabled:**
@@ -58,6 +87,10 @@ openapi-to-md -s openapi.yaml README.md
 **Output to stdout (redirect to file):**
 ```sh
 openapi-to-md openapi.json > README.md
+# Or output HTML directly
+openapi-to-md --html openapi.yaml > api.html
+# Or pipe PDF binary directly
+openapi-to-md --pdf openapi.yaml > api.pdf
 ```
 
 **Convert from a remote URL:**
@@ -104,6 +137,51 @@ console.log(markdown);
 
 **Returns:**
 A `Promise` that resolves to the generated Markdown string. Returns `undefined` if the input cannot be parsed as YAML or JSON. Other failures (for example, an OpenAPI v2 document that cannot be converted) reject the promise.
+
+#### `convertHtml(src: string, options?: ConvertHtmlOptions): Promise<string | undefined>`
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `src` | `string` | The source OpenAPI document content (YAML or JSON string). |
+| `options` | `ConvertHtmlOptions` | (Optional) Options for HTML generation. |
+
+`ConvertHtmlOptions`:
+- `sort?: boolean` - Sort paths and references alphabetically (default: `false`).
+- `standalone?: boolean` - If `true`, outputs a complete HTML document with embedded CSS. If `false`, outputs only `<div class="markdown-body">...</div>` (default: `true`).
+- `title?: string` - Document `<title>` tag (default: OpenAPI `info.title` or `"API Documentation"`).
+- `theme?: "light" | "dark"` - Color scheme (default: `"light"`).
+- `template?: string` - Bundled template name (e.g. `"default"`, `"report"`, `"book"`, `"compact"`).
+- `css?: string` - Custom CSS to append or style the document.
+- `toc?: boolean` - Include a table of contents (default: `false`).
+- `tocTitle?: string` - Custom title heading for table of contents (default: `"Contents"`).
+- `tocDepth?: number` - Deepest heading level in table of contents (1-6, default: `3`).
+- `cover?: boolean` - Include a cover page (default: `false`).
+
+**Returns:**
+A `Promise` that resolves to the generated HTML string, or `undefined` if the document cannot be parsed.
+
+#### `convertPdf(src: string, options?: ConvertPdfOptions): Promise<Uint8Array | undefined>`
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `src` | `string` | The source OpenAPI document content (YAML or JSON string). |
+| `options` | `ConvertPdfOptions` | (Optional) Options for PDF generation. |
+
+`ConvertPdfOptions`:
+- `sort?: boolean` - Sort paths and references alphabetically (default: `false`).
+- `title?: string` - PDF title metadata and heading (default: OpenAPI `info.title` or `"API Documentation"`).
+- `theme?: "light" | "dark"` - Color scheme (default: `"light"`).
+- `template?: string` - Bundled template name (e.g. `"default"`, `"report"`, `"book"`, `"compact"`).
+- `pageSize?: string` - PDF page size (e.g. `"A4"`, `"Letter"`, `"210mm 297mm"`).
+- `width?: number` - Layout viewport width in CSS pixels (default: `800`).
+- `toc?: boolean` - Include a table of contents with PDF page numbers (default: `true`).
+- `tocTitle?: string` - Custom title heading for table of contents (default: `"Contents"`).
+- `tocDepth?: number` - Deepest heading level in table of contents (1-6, default: `3`).
+- `cover?: boolean` - Include a cover page (default: `false`).
+- Plus all standard [wasm-html-to-image](https://www.npmjs.com/package/wasm-html-to-image) rendering options (`pdfMargin`, `pdfOutline`, `colorSpace`, etc.).
+
+**Returns:**
+A `Promise` that resolves to the generated PDF binary bytes (`Uint8Array`), or `undefined` if the document cannot be parsed.
 
 ## Output Structure
 

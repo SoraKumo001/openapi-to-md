@@ -11,6 +11,8 @@
     "lint": "eslint src",
     "test": "vitest --coverage",
     "example": "tsx src/openapi-to-md.ts examples/petstore.yaml examples/petstore.md",
+    "example:html": "tsx src/openapi-to-md.ts examples/petstore.yaml examples/petstore.html",
+    "example:pdf": "tsx src/openapi-to-md.ts examples/petstore.yaml examples/petstore.pdf",
     "test:manual": "tsx src/openapi-to-md.ts test/tmp/api.github.com.yaml test/tmp/README.md",
     "test:sort": "tsx src/openapi-to-md.ts -s test/tmp/api.github.com.yaml test/tmp/README.md",
     "test:url": "tsx src/openapi-to-md.ts -s https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.yaml test/tmp/README.md"
@@ -40,7 +42,10 @@
   },
   "dependencies": {
     "commander": "^14.0.2",
+    "highlight.js": "^11.12.0",
+    "marked": "^18.1.3",
     "swagger2openapi": "^7.0.8",
+    "wasm-html-to-image": "^1.3.1",
     "yaml": "^2.8.2"
   },
   "description": "Convert OpenAPI format to Markdown",

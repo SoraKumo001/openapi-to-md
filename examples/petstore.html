@@ -1,0 +1,271 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Swagger Petstore</title><style>:root { --accent: #0969da; --surface: #f6f8fa; --border: #d1d9e0; --muted: #59636e; --text: #1f2328; --page: #ffffff; }
+html, body { margin: 0; padding: 0; background: #ffffff; }
+body { color: #1f2328; font-family: sans-serif; font-size: 16px; line-height: 1.5; }
+.markdown-body { padding: 32px; }
+.markdown-body > *:first-child { margin-top: 0; }
+.markdown-body > *:last-child { margin-bottom: 0; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 { margin-top: 24px; margin-bottom: 16px; font-family: sans-serif; font-weight: 600; line-height: 1.25; text-align: left; color: #1f2328; }
+.markdown-body h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid #d1d9e0; }
+.markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid #d1d9e0; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h4 { font-size: 1em; }
+.markdown-body h5 { font-size: 0.875em; }
+.markdown-body h6 { font-size: 0.85em; color: #59636e; }
+.markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body blockquote, .markdown-body pre, .markdown-body table { margin-top: 0; margin-bottom: 16px; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+.markdown-body li + li { margin-top: 0.25em; }
+.markdown-body li > ul, .markdown-body li > ol { margin-top: 0.25em; margin-bottom: 0; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body strong { font-weight: 600; }
+.markdown-body blockquote { margin-left: 0; margin-right: 0; padding: 0 1em; color: #59636e; border-left: 4px solid #d1d9e0; }
+.markdown-body blockquote > *:last-child { margin-bottom: 0; }
+.markdown-body code { padding: 0.2em 0.4em; font-family: monospace; font-size: 85%; background: #f6f8fa; border-radius: 6px; }
+.markdown-body pre { padding: 16px; overflow: hidden; white-space: pre-wrap; word-break: break-all; font-size: 85%; line-height: 1.45; background: #f6f8fa; border-radius: 6px; text-align: left; }
+.markdown-body .diagram { margin: 0 0 16px; text-align: center; }
+.markdown-body .mermaid { display: inline-block; margin: 0; color: #1f2328; --mermaid-fg: #1f2328; --mermaid-bg: #ffffff; --mermaid-border: #d1d9e0; --mermaid-surface: #f6f8fa; }
+.markdown-body pre code { padding: 0; font-size: 100%; background: transparent; white-space: pre-wrap; word-break: break-all; }
+.markdown-body .hnum { margin-right: 0.4em; }
+.markdown-body .callout { margin: 0 0 16px; padding: 10px 16px; border-left: 4px solid #0969da; background: #f6f8fa; break-inside: avoid; }
+.markdown-body .callout > *:last-child { margin-bottom: 0; }
+.markdown-body .callout-title { margin: 0 0 4px; font-weight: 700; color: #0969da; }
+.markdown-body .callout-tip { border-left-color: #16a34a; }
+.markdown-body .callout-tip .callout-title { color: #16a34a; }
+.markdown-body .callout-important { border-left-color: #8b5cf6; }
+.markdown-body .callout-important .callout-title { color: #8b5cf6; }
+.markdown-body .callout-warning { border-left-color: #d97706; }
+.markdown-body .callout-warning .callout-title { color: #d97706; }
+.markdown-body .callout-caution { border-left-color: #dc2626; }
+.markdown-body .callout-caution .callout-title { color: #dc2626; }
+.markdown-body .figure { margin: 0 0 16px; text-align: center; break-inside: avoid; }
+.markdown-body .figure img { max-width: 100%; }
+.markdown-body figcaption { margin-top: 6px; font-size: 0.9em; color: #59636e; }
+.markdown-body .pagebreak { height: 1px; margin: 0; break-after: page; }
+.markdown-body .fnref { font-size: 0.75em; line-height: 0; }
+.markdown-body .footnotes { margin-top: 32px; padding-top: 8px; border-top: 1px solid #d1d9e0; font-size: 0.9em; color: #59636e; }
+.markdown-body .footnotes-title { margin: 0 0 4px; font-weight: 600; }
+.markdown-body .footnotes ol { margin: 0; }
+.markdown-body hr { height: 0; margin: 24px 0; border: 0; border-top: 4px solid #d1d9e0; }
+.markdown-body img { max-width: 100%; }
+.markdown-body table { border-collapse: collapse; }
+.markdown-body th, .markdown-body td { padding: 6px 13px; border: 1px solid #d1d9e0; }
+.markdown-body th { font-weight: 600; }
+.markdown-body tr:nth-child(2n) { background: #f6f8fa; }
+.markdown-body input[type="checkbox"] { margin: 0 0.4em 0 -1.4em; }
+.hljs-keyword, .hljs-doctag, .hljs-template-tag, .hljs-type, .hljs-meta { color: #cf222e; }
+.hljs-string, .hljs-regexp, .hljs-symbol { color: #0a3069; }
+.hljs-comment, .hljs-quote { color: #6e7781; }
+.hljs-number, .hljs-literal, .hljs-attr, .hljs-attribute, .hljs-variable, .hljs-built_in, .hljs-selector-id, .hljs-selector-class, .hljs-params { color: #0550ae; }
+.hljs-title { color: #8250df; }
+.hljs-name, .hljs-tag, .hljs-selector-tag, .hljs-bullet { color: #116329; }
+.hljs-section { color: #0550ae; font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }
+.hljs-addition { color: #116329; background: #dafbe1; }
+.hljs-deletion { color: #cf222e; background: #ffebe9; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 { break-after: avoid; break-inside: avoid; }
+.markdown-body .toc { margin: 0 0 24px; break-after: page; }
+.markdown-body .toc-title { margin: 0 0 12px; font-size: 1.5em; font-weight: 600; line-height: 1.25; }
+.markdown-body .toc-item { display: flex; align-items: baseline; padding: 2px 0; color: #1f2328; text-decoration: none; }
+.markdown-body .toc-l1 { font-weight: 600; margin-top: 6px; }
+.markdown-body .toc-l2 { padding-left: 1.25em; }
+.markdown-body .toc-l3 { padding-left: 2.5em; }
+.markdown-body .toc-l4, .markdown-body .toc-l5, .markdown-body .toc-l6 { padding-left: 3.75em; }
+.markdown-body .toc-leader { flex: 1; min-width: 12px; margin: 0 6px; border-bottom: 1px dotted #59636e; }
+.markdown-body .toc-page { min-width: 2.5em; text-align: right; color: #59636e; }
+.markdown-body pre, .markdown-body .diagram,.markdown-body table, .markdown-body blockquote, .markdown-body img, .markdown-body tr { break-inside: avoid; }
+.cover { margin: 40mm 0 0; break-after: page; }
+.cover-logo { display: block; max-height: 22mm; max-width: 60mm; margin-bottom: 14mm; }
+.cover-title { margin: 0; font-size: 2.6em; font-weight: 700; line-height: 1.25; }
+.cover-subtitle { margin: 0.6em 0 0; font-size: 1.25em; color: var(--muted, #6b7280); }
+.cover-meta { margin: 3em 0 0; color: var(--muted, #6b7280); }
+.cover-meta span + span { margin-left: 1.5em; }
+.cover.cover-plain { padding: 0; border: 0; }
+.cover.cover-center { padding: 0; border: 0; text-align: center; }
+.cover.cover-band { padding-left: 14px; border-left: 6px solid var(--accent, #1d4ed8); text-align: left; }
+</style></head><body><article class="markdown-body"><h1 id="swagger-petstore">Swagger Petstore</h1>
+<blockquote>
+<p>Version 1.0.0</p>
+</blockquote>
+<ul>
+<li>License: MIT</li>
+<li>Server: <a href="http://petstore.swagger.io/v1">http://petstore.swagger.io/v1</a></li>
+</ul>
+<h2 id="path-table">Path Table</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GET</td>
+<td><a href="#getpets">/pets</a></td>
+<td>List all pets</td>
+</tr>
+<tr>
+<td>POST</td>
+<td><a href="#postpets">/pets</a></td>
+<td>Create a pet</td>
+</tr>
+<tr>
+<td>GET</td>
+<td><a href="#getpetspetid">/pets/{petId}</a></td>
+<td>Info for a specific pet</td>
+</tr>
+</tbody></table>
+<h2 id="reference-table">Reference Table</h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Path</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pet</td>
+<td><a href="#componentsschemaspet">#/components/schemas/Pet</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Pets</td>
+<td><a href="#componentsschemaspets">#/components/schemas/Pets</a></td>
+<td></td>
+</tr>
+<tr>
+<td>Error</td>
+<td><a href="#componentsschemaserror">#/components/schemas/Error</a></td>
+<td></td>
+</tr>
+</tbody></table>
+<h2 id="path-details">Path Details</h2>
+<hr>
+<h3 id="getpets">[GET]/pets</h3>
+<ul>
+<li><p>Summary<br>List all pets</p>
+</li>
+<li><p>Operation id<br>listPets</p>
+</li>
+<li><p>Tags<br>pets</p>
+</li>
+</ul>
+<h4 id="parametersquery">Parameters(Query)</h4>
+<pre><code class="language-typescript"><span class="hljs-comment">// How many items to return at one time (max 100)</span>
+<span class="hljs-attr">limit</span>?: integer <span class="hljs-comment">//format: int32 //maximum: 100</span>
+</code></pre>
+<h4 id="responses">Responses</h4>
+<ul>
+<li>200 A paged array of pets</li>
+</ul>
+<p><code>application/json</code></p>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">id</span>: integer <span class="hljs-comment">//format: int64</span>
+  <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">tag</span>?: <span class="hljs-built_in">string</span>
+}[] <span class="hljs-comment">//maxItems: 100</span>
+</code></pre>
+<p><code>Headers</code></p>
+<pre><code class="language-typescript"><span class="hljs-comment">// A link to the next page of responses</span>
+x-<span class="hljs-attr">next</span>?: <span class="hljs-built_in">string</span>
+</code></pre>
+<ul>
+<li>default unexpected error</li>
+</ul>
+<p><code>application/json</code></p>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">code</span>: integer <span class="hljs-comment">//format: int32</span>
+  <span class="hljs-attr">message</span>: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+<hr>
+<h3 id="postpets">[POST]/pets</h3>
+<ul>
+<li><p>Summary<br>Create a pet</p>
+</li>
+<li><p>Operation id<br>createPets</p>
+</li>
+<li><p>Tags<br>pets</p>
+</li>
+</ul>
+<h4 id="requestbody">RequestBody</h4>
+<p><em>Required</em></p>
+<ul>
+<li>application/json</li>
+</ul>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">id</span>: integer <span class="hljs-comment">//format: int64</span>
+  <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">tag</span>?: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+<h4 id="responses-2">Responses</h4>
+<ul>
+<li><p>201 Null response</p>
+</li>
+<li><p>default unexpected error</p>
+</li>
+</ul>
+<p><code>application/json</code></p>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">code</span>: integer <span class="hljs-comment">//format: int32</span>
+  <span class="hljs-attr">message</span>: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+<hr>
+<h3 id="getpetspetid">[GET]/pets/{petId}</h3>
+<ul>
+<li><p>Summary<br>Info for a specific pet</p>
+</li>
+<li><p>Operation id<br>showPetById</p>
+</li>
+<li><p>Tags<br>pets</p>
+</li>
+</ul>
+<h4 id="parameterspath">Parameters(Path)</h4>
+<pre><code class="language-typescript"><span class="hljs-comment">// The id of the pet to retrieve</span>
+<span class="hljs-attr">petId</span>: <span class="hljs-built_in">string</span>
+</code></pre>
+<h4 id="responses-3">Responses</h4>
+<ul>
+<li>200 Expected response to a valid request</li>
+</ul>
+<p><code>application/json</code></p>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">id</span>: integer <span class="hljs-comment">//format: int64</span>
+  <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">tag</span>?: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+<ul>
+<li>default unexpected error</li>
+</ul>
+<p><code>application/json</code></p>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">code</span>: integer <span class="hljs-comment">//format: int32</span>
+  <span class="hljs-attr">message</span>: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+<h2 id="references">References</h2>
+<h3 id="componentsschemaspet">#/components/schemas/Pet</h3>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">id</span>: integer <span class="hljs-comment">//format: int64</span>
+  <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">tag</span>?: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+<h3 id="componentsschemaspets">#/components/schemas/Pets</h3>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">id</span>: integer <span class="hljs-comment">//format: int64</span>
+  <span class="hljs-attr">name</span>: <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">tag</span>?: <span class="hljs-built_in">string</span>
+}[] <span class="hljs-comment">//maxItems: 100</span>
+</code></pre>
+<h3 id="componentsschemaserror">#/components/schemas/Error</h3>
+<pre><code class="language-typescript">{
+  <span class="hljs-attr">code</span>: integer <span class="hljs-comment">//format: int32</span>
+  <span class="hljs-attr">message</span>: <span class="hljs-built_in">string</span>
+}
+</code></pre>
+</article></body></html>
