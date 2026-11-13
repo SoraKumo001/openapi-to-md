@@ -211,5 +211,47 @@ components:
       "  // item desc\n  withDesc?: string[] //maxLength: 10 //default: foo",
     );
   });
+
+  it("should output description for array-type properties (issue #12)", async () => {
+    const result = await convertMarkdown(
+      spec(`paths: {}
+components:
+  schemas:
+    ValidityProperty:
+      description: Key value pair object.
+      type: object
+      properties:
+        key:
+          type: string
+    Container:
+      type: object
+      required: [validityProperties]
+      properties:
+        validityProperties:
+          description: |-
+            Key value pairs describing document properties
+            and their relationship to the validity decision.
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidityProperty'
+        tags:
+          description: List of tags.
+          type: array
+          items:
+            type: string
+`),
+    );
+    expect(result).toContain(
+      [
+        "  // Key value pairs describing document properties",
+        "  // and their relationship to the validity decision.",
+        "  // Key value pair object.",
+        "  validityProperties: {",
+        "    key?: string",
+        "  }[]",
+      ].join("\n"),
+    );
+    expect(result).toContain("  // List of tags.\n  tags?: string[]");
+  });
 });
 
