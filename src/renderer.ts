@@ -167,7 +167,7 @@ const outputRefComment = (
 };
 const outputComment = (
   refObject: OpenAPIV3.ReferenceObject | unknown | null,
-  apiObject: OpenAPIV3.NonArraySchemaObject,
+  apiObject: OpenAPIV3.SchemaObject,
   level: number,
 ) => {
   if (refObject) {
@@ -317,7 +317,7 @@ const outputObjectBody = (
     }
     output += SP(nowLevel) + "}\n";
   } else if (apiObject.type === "array") {
-    output += outputRefComment(schemas, nowLevel);
+    output += outputComment(schemas, apiObject, nowLevel);
     const rendered = outputObject(
       apiDocument,
       name,
